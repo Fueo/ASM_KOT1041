@@ -1,6 +1,7 @@
 package com.example.kot1041_asm
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.ui.Modifier
@@ -17,7 +18,7 @@ class MainActivity : ComponentActivity() {
 //
 //                    }
 //                )
-                Login(Modifier)
+                Login()
             }
         }
     }
