@@ -116,6 +116,7 @@ fun ProductDetail(productId: String) {
             .background(Color.White)
     ) {
         TopImageSection(
+            modifier = Modifier.weight(1f), // Cấp cho ảnh không gian giãn nở bằng weight(1f)
             images = productData.images,
             colors = colors,
             selectedColorIndex = selectedColorIndex,
@@ -188,7 +189,7 @@ fun ProductDetail(productId: String) {
             )
         }
 
-        Spacer(modifier = Modifier.weight(1f))
+        Spacer(modifier = Modifier.height(16.dp)) // Loại bỏ weight(1f) cũ, chỉ giữ khoảng cách cố định
 
         BottomActionRow(
             onAddToCart = {
@@ -202,6 +203,7 @@ fun ProductDetail(productId: String) {
 
 @Composable
 fun TopImageSection(
+    modifier: Modifier = Modifier, // Thêm tham số modifier
     images: List<String>,
     colors: List<Color>,
     selectedColorIndex: Int,
@@ -211,9 +213,8 @@ fun TopImageSection(
     val pagerState = rememberPagerState(pageCount = { images.size })
 
     Box(
-        modifier = Modifier
+        modifier = modifier // Áp dụng modifier truyền vào, KHÔNG cứng chiều cao nữa
             .fillMaxWidth()
-            .height(420.dp)
     ) {
         Box(
             modifier = Modifier

@@ -42,7 +42,7 @@ val Typography = Typography(
     ),
     displayMedium = TextStyle(
         fontFamily = GelasioSemiBold,
-        fontWeight = FontWeight.SemiBold,
+        fontWeight = FontWeight.Normal,
         fontSize = 24.sp,
         letterSpacing = 0.sp
     ),

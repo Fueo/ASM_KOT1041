@@ -98,7 +98,7 @@ fun Login() {
                     text = "Hello !",
                     style = MaterialTheme.typography.displayMedium.copy(
                         fontSize = 30.sp,
-                        color = Color(0xFF6A6A6A)
+                        color = Color(0xFF909090)
                     )
                 )
 

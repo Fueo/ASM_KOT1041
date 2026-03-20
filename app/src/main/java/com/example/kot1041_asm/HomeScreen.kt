@@ -12,12 +12,14 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.*
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +27,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -54,27 +58,56 @@ data class Product(val id: String, val name: String, val price: Double, val imag
 
 @Composable
 fun Home(modifier: Modifier = Modifier) {
+    var cartCount by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) }
+
     Scaffold(
-        bottomBar = { BottomNavBar() }
+        bottomBar = {
+            BottomNavBar(
+                selectedTab = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
+        }
     ) { paddingValues ->
-        Column(
-            modifier = modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .background(Color.White)
-        ) {
-            Spacer(modifier = Modifier.height(16.dp))
-            HeaderSection()
-            Spacer(modifier = Modifier.height(24.dp))
-            RenderCategories()
-            Spacer(modifier = Modifier.height(24.dp))
-            RenderProductGrid()
+        when (selectedTab) {
+            0 -> HomeContent(
+                modifier = modifier.padding(paddingValues),
+                cartCount = cartCount,
+                onAddToCart = { cartCount++ }
+            )
+            1 -> PlaceholderScreen("Bookmark Screen", modifier.padding(paddingValues))
+            2 -> PlaceholderScreen("Notifications Screen", modifier.padding(paddingValues))
+            3 -> PlaceholderScreen("Profile Screen", modifier.padding(paddingValues))
         }
     }
 }
 
 @Composable
-fun HeaderSection() {
+fun HomeContent(
+    modifier: Modifier = Modifier,
+    cartCount: Int,
+    onAddToCart: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.White)
+    ) {
+        Spacer(modifier = Modifier.height(16.dp))
+        HeaderSection(cartCount = cartCount)
+        Spacer(modifier = Modifier.height(24.dp))
+        RenderCategories()
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Bọc Grid trong Box và dùng weight(1f) để Grid đẩy hết xuống không gian còn lại
+        Box(modifier = Modifier.weight(1f)) {
+            RenderProductGrid(onAddToCart = onAddToCart)
+        }
+    }
+}
+
+@Composable
+fun HeaderSection(cartCount: Int) {
     val context = LocalContext.current
     Row(
         modifier = Modifier
@@ -101,7 +134,35 @@ fun HeaderSection() {
         }
 
         IconButton(onClick = { context.startActivity(Intent(context, CartScreen::class.java)) }) {
-            Icon(imageVector = Icons.Outlined.ShoppingCart, contentDescription = "Cart", tint = TextSecondary)
+            // Box bao bọc Icon và Custom Badge
+            Box(contentAlignment = Alignment.TopEnd) {
+                Icon(
+                    imageVector = Icons.Outlined.ShoppingCart,
+                    contentDescription = "Cart",
+                    tint = TextSecondary,
+                    modifier = Modifier.padding(4.dp) // Thêm padding để có chỗ cho badge
+                )
+
+                // Custom Badge Đỏ Bo Tròn
+                if (cartCount > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(16.dp)
+                            .clip(CircleShape) // Bo tròn hoàn hảo
+                            .background(Color(0xFFE53935)) // Đỏ tươi
+                            .align(Alignment.TopEnd),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = if (cartCount > 99) "99+" else cartCount.toString(),
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -113,21 +174,27 @@ fun RenderCategories(modifier: Modifier = Modifier) {
         Category("2", "Chair", "https://cdn-icons-png.flaticon.com/512/2874/2874052.png"),
         Category("3", "Table", "https://cdn-icons-png.flaticon.com/512/2619/2619082.png"),
         Category("4", "Armchair", "https://cdn-icons-png.flaticon.com/512/7511/7511242.png"),
-        Category("5", "Bed", "https://cdn-icons-png.flaticon.com/512/3133/3133645.png")
+        Category("5", "Bed", "https://cdn-icons-png.flaticon.com/512/3133/3133645.png"),
+        Category("6", "Lamp", "https://cdn-icons-png.flaticon.com/512/3133/3133645.png")
     )
 
     var selectedIndex by remember { mutableStateOf(0) }
 
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val itemWidth = (screenWidth - 32.dp) / 5
+
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         itemsIndexed(categories) { index, category ->
             val isSelected = index == selectedIndex
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.clickable { selectedIndex = index }
+                modifier = Modifier
+                    .width(itemWidth)
+                    .clickable { selectedIndex = index }
             ) {
                 Box(
                     modifier = Modifier
@@ -156,8 +223,8 @@ fun RenderCategories(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun RenderProductGrid() {
-    val context = LocalContext.current // Lấy context để start Activity
+fun RenderProductGrid(onAddToCart: () -> Unit) {
+    val context = LocalContext.current
 
     val products = listOf(
         Product("1", "Black Simple Lamp", 12.00, "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop"),
@@ -172,14 +239,14 @@ fun RenderProductGrid() {
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(20.dp), // Tăng nhẹ khoảng cách dọc
+        contentPadding = PaddingValues(bottom = 24.dp) // Thêm padding dưới để cuộn lên không bị vướng
     ) {
         items(products) { product ->
             ProductCard(
                 product = product,
-                // Truyền hàm xử lý click vào card
+                onAddToCart = onAddToCart,
                 onProductClick = { productId ->
-                    // Tạo Intent và truyền ID sang ProductDetailScreen
                     val intent = Intent(context, ProductDetailScreen::class.java).apply {
                         putExtra("PRODUCT_ID", productId)
                     }
@@ -191,13 +258,16 @@ fun RenderProductGrid() {
 }
 
 @Composable
-fun ProductCard(product: Product, onProductClick: (String) -> Unit) {
-    // Thêm Modifier.clickable để bắt sự kiện click lên toàn bộ Card
+fun ProductCard(
+    product: Product,
+    onAddToCart: () -> Unit,
+    onProductClick: (String) -> Unit
+) {
     Column(modifier = Modifier.fillMaxWidth().clickable { onProductClick(product.id) }) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(200.dp)
+                .aspectRatio(0.75f)
                 .clip(RoundedCornerShape(12.dp))
                 .background(SecondaryButtonBG)
         ) {
@@ -208,62 +278,92 @@ fun ProductCard(product: Product, onProductClick: (String) -> Unit) {
                 modifier = Modifier.fillMaxSize()
             )
 
+            // Khối nút Add to Cart
             Box(
                 modifier = Modifier
-                    .padding(8.dp)
+                    .padding(10.dp)
                     .align(Alignment.BottomEnd)
-                    .size(30.dp)
+                    .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(Color.LightGray.copy(alpha = 0.8f))
-                    .clickable { /* Xử lý thêm vào giỏ ngay tại đây nếu cần */ },
+                    // Đổi lại nền màu xám mờ giống thiết kế cũ
+                    .background(Color(0xFF606060).copy(alpha = 0.5f))
+                    .clickable {
+                        onAddToCart()
+                    },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.ShoppingCart,
+                    imageVector = Icons.Outlined.ShoppingCart,
                     contentDescription = "Add to Cart",
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(18.dp),
+                    // Đổi lại icon thành màu trắng cho nổi bật trên nền xám
                     tint = Color.White
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         Text(
             text = product.name,
-            style = Typography.bodySmall,
+            style = Typography.bodySmall.copy(
+                fontWeight = FontWeight.Normal,
+                fontSize = 14.sp
+            ),
             color = TextSecondary
         )
+        Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "$ ${String.format("%.2f", product.price)}",
-            style = Typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            fontFamily = NunitoSans,
+            fontWeight = FontWeight.Bold,
+            fontSize = 14.sp,
             color = Primary
         )
     }
 }
 
 @Composable
-fun BottomNavBar() {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(70.dp)
-            .background(Color.White),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.CenterVertically
+fun BottomNavBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    NavigationBar(
+        modifier = Modifier.height(70.dp),
+        containerColor = Color.White,
+        tonalElevation = 8.dp
     ) {
-        IconButton(onClick = { /* Handle Navigation */ }) {
-            Icon(Icons.Filled.Home, contentDescription = "Home", tint = Primary)
+        val items = listOf(
+            Pair(Icons.Filled.Home, Icons.Outlined.Home),
+            Pair(Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder),
+            Pair(Icons.Filled.Notifications, Icons.Outlined.Notifications),
+            Pair(Icons.Filled.Person, Icons.Outlined.Person)
+        )
+
+        items.forEachIndexed { index, iconPair ->
+            NavigationBarItem(
+                selected = selectedTab == index,
+                onClick = { onTabSelected(index) },
+                icon = {
+                    Icon(
+                        imageVector = if (selectedTab == index) iconPair.first else iconPair.second,
+                        contentDescription = "Tab $index"
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Primary,
+                    unselectedIconColor = TextSecondary,
+                    indicatorColor = Color.Transparent
+                )
+            )
         }
-        IconButton(onClick = { /* Handle Navigation */ }) {
-            Icon(Icons.Outlined.FavoriteBorder, contentDescription = "Bookmark", tint = TextSecondary)
-        }
-        IconButton(onClick = { /* Handle Navigation */ }) {
-            Icon(Icons.Outlined.Notifications, contentDescription = "Notifications", tint = TextSecondary)
-        }
-        IconButton(onClick = { /* Handle Navigation */ }) {
-            Icon(Icons.Outlined.Person, contentDescription = "Profile", tint = TextSecondary)
-        }
+    }
+}
+
+@Composable
+fun PlaceholderScreen(title: String, modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier.fillMaxSize().background(Color.White),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(text = title, style = Typography.displaySmall, color = Primary)
     }
 }
 

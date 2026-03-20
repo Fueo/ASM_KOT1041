@@ -3,6 +3,7 @@ package com.example.kot1041_asm
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
@@ -89,13 +90,13 @@ fun Search() {
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            // Căn lề cho toàn bộ Grid (Tránh bị dính sát mép màn hình)
+            // Căn lề cho toàn bộ Grid
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 24.dp, bottom = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp) // Cập nhật lại khoảng cách dọc cho giống HomeScreen
         ) {
 
-            // 1. Thanh Search (Nằm trong Grid để cuộn đi mất)
+            // 1. Thanh Search
             item(span = { GridItemSpan(maxLineSpan) }) {
                 TextField(
                     value = searchQuery,
@@ -177,6 +178,10 @@ fun Search() {
                 items(filteredProducts) { product ->
                     ProductCard(
                         product = product,
+                        // Thêm sự kiện onAddToCart vào đây để hết báo lỗi
+                        onAddToCart = {
+                            Toast.makeText(context, "Đã thêm ${product.name} vào giỏ!", Toast.LENGTH_SHORT).show()
+                        },
                         onProductClick = { productId ->
                             val intent = Intent(context, ProductDetailScreen::class.java).apply {
                                 putExtra("PRODUCT_ID", productId)
@@ -191,7 +196,7 @@ fun Search() {
         // --- LAYER TRÊN CÙNG: NÚT BACK DÍNH (STICKY/FLOATING) ---
         Box(
             modifier = Modifier
-                .padding(start = 12.dp, top = 40.dp) // Căn lề khớp với Padding của Grid
+                .padding(start = 12.dp, top = 40.dp)
                 .size(24.dp)
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(10.dp), spotColor = Color.LightGray)
                 .background(Color.White, RoundedCornerShape(10.dp))

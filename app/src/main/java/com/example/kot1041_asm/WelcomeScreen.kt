@@ -1,5 +1,7 @@
 package com.example.kot1041_asm.ui.screens
 
+import android.app.Activity
+import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -21,12 +23,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.kot1041_asm.LoginScreen // Nhớ kiểm tra lại đường dẫn import này cho đúng với file LoginScreen của bạn
 import com.example.kot1041_asm.R
 import com.example.kot1041_asm.ui.theme.KOT1041_ASMTheme
 import com.example.kot1041_asm.ui.theme.Primary
@@ -35,9 +38,10 @@ import com.example.kot1041_asm.ui.theme.blackFont
 
 @Composable
 fun WelcomeScreen(
-    modifier: Modifier = Modifier,
-    onGetStartedClick: () -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     Box(
         modifier = modifier.fillMaxSize()
     ) {
@@ -48,7 +52,14 @@ fun WelcomeScreen(
 
         WelcomeContent(
             modifier = Modifier.fillMaxSize(),
-            onGetStartedClick = onGetStartedClick
+            onGetStartedClick = {
+                // 1. Mở màn hình Login
+                val intent = Intent(context, LoginScreen::class.java)
+                context.startActivity(intent)
+
+                // 2. Kết thúc màn hình Welcome hiện tại (Đóng hoàn toàn)
+                (context as? Activity)?.finish()
+            }
         )
     }
 }
@@ -102,7 +113,8 @@ private fun WelcomeContent(
                 .height(54.dp)
         )
 
-        Spacer(modifier = Modifier.height(36.dp))
+        // Tăng chiều cao Spacer này từ 36.dp lên 100.dp để đẩy nút Get Started lên cao hơn
+        Spacer(modifier = Modifier.height(100.dp))
     }
 }
 
@@ -132,18 +144,15 @@ private fun WelcomeTitle(
 private fun WelcomeDescription(
     modifier: Modifier = Modifier
 ) {
-    Column(
-    ) {
+    Column {
         Text(
             text = "The best simple place where you\ndiscover most wonderful furnitures\nand make your home beautiful",
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = Color.Gray,
             textAlign = TextAlign.Justify,
-
-            )
+        )
     }
-
 }
 
 @Composable
@@ -163,7 +172,7 @@ private fun PrimaryActionButton(
         Text(
             text = text,
             style = MaterialTheme.typography.displaySmall.copy(
-                color = androidx.compose.ui.graphics.Color.White
+                color = Color.White
             )
         )
     }
