@@ -14,21 +14,18 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material.icons.rounded.ShoppingCart
 import androidx.compose.material3.*
-import androidx.compose.material3.Typography
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.PlatformTextStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -44,7 +41,7 @@ class HomeScreen : ComponentActivity() {
             KOT1041_ASMTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
+                    color = Color.White
                 ) {
                     Home()
                 }
@@ -53,7 +50,8 @@ class HomeScreen : ComponentActivity() {
     }
 }
 
-data class Category(val id: String, val name: String, val iconUrl: String)
+// Đổi Category để nhận id của file Drawable thay vì url String
+data class Category(val id: String, val name: String, val iconRes: Int)
 data class Product(val id: String, val name: String, val price: Double, val imageUrl: String)
 
 @Composable
@@ -63,11 +61,12 @@ fun Home(modifier: Modifier = Modifier) {
 
     Scaffold(
         bottomBar = {
-            BottomNavBar(
+            RenderBottomTabs(
                 selectedTab = selectedTab,
                 onTabSelected = { selectedTab = it }
             )
-        }
+        },
+        containerColor = Color.White
     ) { paddingValues ->
         when (selectedTab) {
             0 -> HomeContent(
@@ -95,11 +94,12 @@ fun HomeContent(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
         HeaderSection(cartCount = cartCount)
-        Spacer(modifier = Modifier.height(24.dp))
-        RenderCategories()
-        Spacer(modifier = Modifier.height(24.dp))
 
-        // Bọc Grid trong Box và dùng weight(1f) để Grid đẩy hết xuống không gian còn lại
+        Spacer(modifier = Modifier.height(18.dp))
+        RenderCategories()
+
+        Spacer(modifier = Modifier.height(18.dp))
+
         Box(modifier = Modifier.weight(1f)) {
             RenderProductGrid(onAddToCart = onAddToCart)
         }
@@ -117,48 +117,65 @@ fun HeaderSection(cartCount: Int) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         IconButton(onClick = { context.startActivity(Intent(context, SearchScreen::class.java)) }) {
-            Icon(imageVector = Icons.Outlined.Search, contentDescription = "Search", tint = TextSecondary)
+            Icon(
+                painter = painterResource(id = R.drawable.ic_search), // File ic_search.xml
+                contentDescription = "Search",
+                tint = Color(0xFF909090),
+                modifier = Modifier.size(24.dp)
+            )
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
                 text = "Make home",
-                style = Typography.displaySmall.copy(fontWeight = FontWeight.Normal),
-                color = TextSecondary
+                style = TextStyle(
+                    fontFamily = MerriweatherRegular,
+                    fontSize = 18.sp,
+                    color = Color(0xFF909090)
+                )
             )
             Text(
                 text = "BEAUTIFUL",
-                style = Typography.displayMedium,
-                color = Primary
+                style = TextStyle(
+                    fontFamily = MerriweatherBold,
+                    fontSize = 20.sp,
+                    color = Color(0xFF303030)
+                )
             )
         }
 
         IconButton(onClick = { context.startActivity(Intent(context, CartScreen::class.java)) }) {
-            // Box bao bọc Icon và Custom Badge
             Box(contentAlignment = Alignment.TopEnd) {
                 Icon(
-                    imageVector = Icons.Outlined.ShoppingCart,
+                    painter = painterResource(id = R.drawable.ic_cart), // File ic_cart.xml
                     contentDescription = "Cart",
-                    tint = TextSecondary,
-                    modifier = Modifier.padding(4.dp) // Thêm padding để có chỗ cho badge
+                    tint = Color(0xFF909090),
+                    modifier = Modifier
+                        .padding(4.dp)
+                        .size(24.dp)
                 )
 
-                // Custom Badge Đỏ Bo Tròn
                 if (cartCount > 0) {
                     Box(
                         modifier = Modifier
-                            .size(16.dp)
-                            .clip(CircleShape) // Bo tròn hoàn hảo
-                            .background(Color(0xFFE53935)) // Đỏ tươi
+                            .size(12.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFFE53935))
                             .align(Alignment.TopEnd),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = if (cartCount > 99) "99+" else cartCount.toString(),
-                            color = Color.White,
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            textAlign = TextAlign.Center
+                            style = TextStyle(
+                                color = Color.White,
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                textAlign = TextAlign.Center,
+                                lineHeight = 9.sp,
+                                platformStyle = PlatformTextStyle(
+                                    includeFontPadding = false
+                                )
+                            )
                         )
                     }
                 }
@@ -170,23 +187,26 @@ fun HeaderSection(cartCount: Int) {
 @Composable
 fun RenderCategories(modifier: Modifier = Modifier) {
     val categories = listOf(
-        Category("1", "Popular", "https://cdn-icons-png.flaticon.com/512/1828/1828884.png"),
-        Category("2", "Chair", "https://cdn-icons-png.flaticon.com/512/2874/2874052.png"),
-        Category("3", "Table", "https://cdn-icons-png.flaticon.com/512/2619/2619082.png"),
-        Category("4", "Armchair", "https://cdn-icons-png.flaticon.com/512/7511/7511242.png"),
-        Category("5", "Bed", "https://cdn-icons-png.flaticon.com/512/3133/3133645.png"),
-        Category("6", "Lamp", "https://cdn-icons-png.flaticon.com/512/3133/3133645.png")
+        Category("1", "Popular", R.drawable.ic_star),
+        Category("2", "Chair", R.drawable.ic_chair),
+        Category("3", "Table", R.drawable.ic_table),
+        Category("4", "Armchair", R.drawable.ic_sofa),
+        Category("5", "Bed", R.drawable.ic_bed),
+        Category("6", "Lamp", R.drawable.ic_lamp)
     )
 
     var selectedIndex by remember { mutableStateOf(0) }
 
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
-    val itemWidth = (screenWidth - 32.dp) / 5
+
+    // Tổng khoảng trống = 16dp (Start) + 16dp (End) + (4 khoảng cách * 16dp) = 96.dp
+    val itemWidth = (screenWidth - 96.dp) / 5
 
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         itemsIndexed(categories) { index, category ->
             val isSelected = index == selectedIndex
@@ -200,22 +220,24 @@ fun RenderCategories(modifier: Modifier = Modifier) {
                     modifier = Modifier
                         .size(48.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (isSelected) Primary else SecondaryButtonBG),
+                        .background(if (isSelected) Color(0xFF303030) else Color(0xFFF5F5F5)),
                     contentAlignment = Alignment.Center
                 ) {
-                    AsyncImage(
-                        model = category.iconUrl,
+                    Icon(
+                        painter = painterResource(id = category.iconRes),
                         contentDescription = category.name,
                         modifier = Modifier.size(24.dp),
-                        colorFilter = ColorFilter.tint(if (isSelected) Color.White else TextSecondary)
+                        tint = if (isSelected) Color.White else Color(0xFF909090)
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = category.name,
-                    style = Typography.titleMedium,
-                    color = if (isSelected) Primary else TextSecondary,
-                    fontSize = 12.sp
+                    style = TextStyle(
+                        fontFamily = NunitoSansSemiBold,
+                        fontSize = 12.sp,
+                        color = if (isSelected) Color(0xFF303030) else Color(0xFF909090)
+                    )
                 )
             }
         }
@@ -239,8 +261,9 @@ fun RenderProductGrid(onAddToCart: () -> Unit) {
             .fillMaxSize()
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp), // Tăng nhẹ khoảng cách dọc
-        contentPadding = PaddingValues(bottom = 24.dp) // Thêm padding dưới để cuộn lên không bị vướng
+        // Thu nhỏ khoảng cách dọc giữa 2 hàng xuống còn 16.dp
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        contentPadding = PaddingValues(bottom = 24.dp)
     ) {
         items(products) { product ->
             ProductCard(
@@ -269,7 +292,7 @@ fun ProductCard(
                 .fillMaxWidth()
                 .aspectRatio(0.75f)
                 .clip(RoundedCornerShape(12.dp))
-                .background(SecondaryButtonBG)
+                .background(Color(0xFFF5F5F5))
         ) {
             AsyncImage(
                 model = product.imageUrl,
@@ -278,63 +301,59 @@ fun ProductCard(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Khối nút Add to Cart
             Box(
                 modifier = Modifier
                     .padding(10.dp)
                     .align(Alignment.BottomEnd)
                     .size(32.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    // Đổi lại nền màu xám mờ giống thiết kế cũ
-                    .background(Color(0xFF606060).copy(alpha = 0.5f))
-                    .clickable {
-                        onAddToCart()
-                    },
+                    .background(Color(0xFF909090).copy(alpha = 0.6f))
+                    .clickable { onAddToCart() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.ShoppingCart,
+                    painter = painterResource(id = R.drawable.ic_bag),
                     contentDescription = "Add to Cart",
-                    modifier = Modifier.size(18.dp),
-                    // Đổi lại icon thành màu trắng cho nổi bật trên nền xám
+                    modifier = Modifier.size(20.dp),
                     tint = Color.White
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(10.dp))
 
         Text(
             text = product.name,
-            style = Typography.bodySmall.copy(
-                fontWeight = FontWeight.Normal,
-                fontSize = 14.sp
-            ),
-            color = TextSecondary
+            style = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 14.sp,
+                color = Color(0xFF606060)
+            )
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "$ ${String.format("%.2f", product.price)}",
-            fontFamily = NunitoSans,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp,
-            color = Primary
+            style = TextStyle(
+                fontFamily = NunitoSansBold,
+                fontSize = 14.sp,
+                color = Color(0xFF303030)
+            )
         )
     }
 }
 
 @Composable
-fun BottomNavBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+fun RenderBottomTabs(selectedTab: Int, onTabSelected: (Int) -> Unit) {
     NavigationBar(
-        modifier = Modifier.height(70.dp),
+        modifier = Modifier.height(64.dp),
         containerColor = Color.White,
         tonalElevation = 8.dp
     ) {
         val items = listOf(
-            Pair(Icons.Filled.Home, Icons.Outlined.Home),
-            Pair(Icons.Filled.Favorite, Icons.Outlined.FavoriteBorder),
-            Pair(Icons.Filled.Notifications, Icons.Outlined.Notifications),
-            Pair(Icons.Filled.Person, Icons.Outlined.Person)
+            Pair(R.drawable.ic_home_filled, R.drawable.ic_home),
+            Pair(R.drawable.ic_bookmark_filled, R.drawable.ic_bookmark),
+            Pair(R.drawable.ic_notification_filled, R.drawable.ic_notification),
+            Pair(R.drawable.ic_profile_filled, R.drawable.ic_profile)
         )
 
         items.forEachIndexed { index, iconPair ->
@@ -343,13 +362,14 @@ fun BottomNavBar(selectedTab: Int, onTabSelected: (Int) -> Unit) {
                 onClick = { onTabSelected(index) },
                 icon = {
                     Icon(
-                        imageVector = if (selectedTab == index) iconPair.first else iconPair.second,
-                        contentDescription = "Tab $index"
+                        painter = painterResource(id = if (selectedTab == index) iconPair.first else iconPair.second),
+                        contentDescription = "Tab $index",
+                        modifier = Modifier.size(24.dp)
                     )
                 },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Primary,
-                    unselectedIconColor = TextSecondary,
+                    selectedIconColor = Color(0xFF303030),
+                    unselectedIconColor = Color(0xFF909090),
                     indicatorColor = Color.Transparent
                 )
             )
@@ -363,7 +383,14 @@ fun PlaceholderScreen(title: String, modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize().background(Color.White),
         contentAlignment = Alignment.Center
     ) {
-        Text(text = title, style = Typography.displaySmall, color = Primary)
+        Text(
+            text = title,
+            style = TextStyle(
+                fontFamily = MerriweatherBold,
+                fontSize = 20.sp,
+                color = Color(0xFF303030)
+            )
+        )
     }
 }
 

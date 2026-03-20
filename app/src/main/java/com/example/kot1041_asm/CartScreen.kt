@@ -11,10 +11,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Delete
-import androidx.compose.material.icons.outlined.KeyboardArrowRight
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,10 +20,13 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kot1041_asm.ui.theme.*
@@ -61,7 +60,6 @@ class CartScreen : ComponentActivity() {
 fun Cart() {
     val context = LocalContext.current
 
-    // Dữ liệu mock (có thể thay bằng dữ liệu lấy từ DB/ViewModel sau này)
     val cartItems = remember {
         mutableStateListOf(
             CartItemModel("1", "Minimal Stand", 25.00, 1, "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop"),
@@ -70,7 +68,6 @@ fun Cart() {
         )
     }
 
-    // Tính tổng tiền động (Tự động cập nhật khi list thay đổi)
     val totalPrice = cartItems.sumOf { it.price * it.quantity }
 
     Column(
@@ -81,13 +78,13 @@ fun Cart() {
         // 1. Header
         CartHeader(onBackClick = { (context as? Activity)?.finish() })
 
-        // 2. Danh sách sản phẩm (Dùng weight để chiếm hết phần trống ở giữa)
+        // 2. Danh sách sản phẩm
         LazyColumn(
             modifier = Modifier
                 .weight(1f)
                 .padding(horizontal = 20.dp),
             contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             items(cartItems, key = { it.id }) { item ->
                 CartItemRow(
@@ -110,7 +107,7 @@ fun Cart() {
                 )
 
                 Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = SecondaryButtonBG, thickness = 1.dp)
+                HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
             }
         }
 
@@ -129,17 +126,20 @@ fun CartHeader(onBackClick: () -> Unit) {
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
-                imageVector = Icons.Outlined.ArrowBack,
+                painter = painterResource(id = R.drawable.ic_back), // Đã đổi sang drawable
                 contentDescription = "Back",
                 modifier = Modifier.size(20.dp),
-                tint = Primary
+                tint = Color(0xFF303030)
             )
         }
 
         Text(
             text = "My cart",
-            style = Typography.displaySmall,
-            color = Primary,
+            style = TextStyle(
+                fontFamily = MerriweatherBold,
+                fontSize = 18.sp,
+                color = Color(0xFF303030)
+            ),
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center
         )
@@ -168,7 +168,7 @@ fun CartItemRow(
             modifier = Modifier
                 .size(100.dp)
                 .clip(RoundedCornerShape(12.dp))
-                .background(SecondaryButtonBG)
+                .background(Color(0xFFF5F5F5))
         )
 
         Spacer(modifier = Modifier.width(16.dp))
@@ -185,61 +185,83 @@ fun CartItemRow(
                 Column {
                     Text(
                         text = item.name,
-                        style = Typography.bodySmall.copy(fontSize = 14.sp),
-                        color = TextSecondary
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF909090)
+                        )
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "$ ${String.format("%.2f", item.price)}",
-                        style = Typography.titleMedium.copy(fontSize = 16.sp, fontWeight = FontWeight.Bold),
-                        color = Primary
+                        style = TextStyle(
+                            fontFamily = NunitoSansBold,
+                            fontSize = 16.sp,
+                            color = Color(0xFF303030)
+                        )
                     )
                 }
 
-                // Nút Xóa
+                // Nút Xóa (Đã đổi sang drawable)
                 Icon(
-                    imageVector = Icons.Outlined.Delete,
+                    painter = painterResource(id = R.drawable.ic_close), // File hình tròn có chữ X
                     contentDescription = "Remove",
-                    tint = TextSecondary,
+                    tint = Color(0xFF303030),
                     modifier = Modifier
                         .size(20.dp)
                         .clickable { onRemove() }
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Selector Số lượng (Nhỏ hơn ở Product Detail)
+            // Selector Số lượng
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Nút Cộng
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(30.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(SecondaryButtonBG)
+                        .background(Color(0xFFF0F0F0))
                         .clickable { onIncrease() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("+", fontSize = 18.sp, color = Primary, fontWeight = FontWeight.Medium)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_add),
+                        contentDescription = "Increase",
+                        tint = Color(0xFF303030),
+                        modifier = Modifier.size(14.dp)
+                    )
                 }
 
                 Text(
                     text = item.quantity.toString().padStart(2, '0'),
-                    style = Typography.titleMedium.copy(fontSize = 16.sp),
-                    color = Primary
+                    style = TextStyle(
+                        fontFamily = NunitoSansSemiBold,
+                        fontSize = 18.sp,
+                        letterSpacing = 0.05.em,
+                        color = Color(0xFF303030)
+                    )
                 )
 
+                // Nút Trừ
                 Box(
                     modifier = Modifier
-                        .size(28.dp)
+                        .size(30.dp)
                         .clip(RoundedCornerShape(6.dp))
-                        .background(SecondaryButtonBG)
+                        .background(Color(0xFFF0F0F0))
                         .clickable { onDecrease() },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("-", fontSize = 18.sp, color = Primary, fontWeight = FontWeight.Medium)
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_minus),
+                        contentDescription = "Decrease",
+                        tint = Color(0xFF303030),
+                        modifier = Modifier.size(14.dp)
+                    )
                 }
             }
         }
@@ -271,8 +293,11 @@ fun CheckoutSection(totalPrice: Double) {
                 placeholder = {
                     Text(
                         text = "Enter your promo code",
-                        color = TextSecondary,
-                        fontSize = 14.sp
+                        style = TextStyle(
+                            fontFamily = NunitoSansRegular,
+                            fontSize = 14.sp,
+                            color = Color(0xFF909090)
+                        )
                     )
                 },
                 colors = TextFieldDefaults.colors(
@@ -280,6 +305,8 @@ fun CheckoutSection(totalPrice: Double) {
                     unfocusedContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = Color(0xFF303030),
+                    unfocusedTextColor = Color(0xFF303030)
                 ),
                 modifier = Modifier.weight(1f),
                 singleLine = true
@@ -288,22 +315,22 @@ fun CheckoutSection(totalPrice: Double) {
             // Nút áp dụng Promo Code
             Box(
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(Primary)
+                    .background(Color(0xFF303030))
                     .clickable { /* Handle Promo code apply */ },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Outlined.KeyboardArrowRight,
+                    painter = painterResource(id = R.drawable.ic_arrow_right_white), // Đã đổi sang drawable mũi tên
                     contentDescription = "Apply",
                     tint = Color.White,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
 
         // Dòng Total
         Row(
@@ -315,13 +342,20 @@ fun CheckoutSection(totalPrice: Double) {
         ) {
             Text(
                 text = "Total:",
-                style = Typography.displaySmall.copy(fontSize = 20.sp),
-                color = TextSecondary
+                style = TextStyle(
+                    fontFamily = NunitoSansSemiBold,
+                    fontSize = 20.sp,
+                    color = Color(0xFF909090)
+                )
             )
             Text(
                 text = "$ ${String.format("%.2f", totalPrice)}",
-                style = Typography.displayMedium.copy(fontSize = 20.sp, fontWeight = FontWeight.Bold),
-                color = Primary
+                style = TextStyle(
+                    fontFamily = NunitoSansSemiBold,
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF303030)
+                )
             )
         }
 
@@ -333,13 +367,17 @@ fun CheckoutSection(totalPrice: Double) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)
-                .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp), spotColor = Primary),
-            colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp), spotColor = Color(0xFF303030)),
+            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF303030)),
             shape = RoundedCornerShape(12.dp)
         ) {
             Text(
                 text = "Check out",
-                style = Typography.titleMedium.copy(color = Color.White, fontSize = 18.sp)
+                style = TextStyle(
+                    fontFamily = NunitoSansSemiBold,
+                    fontSize = 18.sp,
+                    color = Color.White
+                )
             )
         }
     }

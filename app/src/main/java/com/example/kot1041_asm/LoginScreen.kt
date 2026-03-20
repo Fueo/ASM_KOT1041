@@ -45,14 +45,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
+import com.example.kot1041_asm.ui.theme.BlackFont
+import com.example.kot1041_asm.ui.theme.Grey2
 import com.example.kot1041_asm.ui.theme.KOT1041_ASMTheme
+import com.example.kot1041_asm.ui.theme.MerriweatherBold
+import com.example.kot1041_asm.ui.theme.MerriweatherRegular
+import com.example.kot1041_asm.ui.theme.NunitoSansRegular
+import com.example.kot1041_asm.ui.theme.NunitoSansSemiBold
 
 class LoginScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,7 +86,7 @@ fun Login() {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5))
+            .background(Color.White)
     ) {
         Column(
             modifier = Modifier
@@ -96,9 +104,11 @@ fun Login() {
             Column(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = "Hello !",
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        fontSize = 30.sp,
-                        color = Color(0xFF909090)
+                    style = TextStyle(
+                        fontFamily = MerriweatherRegular,
+                        fontSize =  30.sp,
+                        lineHeight = 45.sp,
+                        color = Grey2
                     )
                 )
 
@@ -106,8 +116,12 @@ fun Login() {
 
                 Text(
                     text = "WELCOME BACK",
-                    style = MaterialTheme.typography.displayMedium.copy(
-                        color = Color(0xFF303030)
+                    style = TextStyle(
+                        fontFamily = MerriweatherBold,
+                        fontSize = 24.sp,
+                        lineHeight = 45.sp,
+                        letterSpacing = 0.05.em,
+                        color = BlackFont
                     )
                 )
             }
@@ -165,7 +179,11 @@ fun Login() {
                 ) {
                     Text(
                         text = "Forgot Password",
-                        style = MaterialTheme.typography.displaySmall
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 18.sp,
+                            color = BlackFont
+                        )
                     )
                 }
 
@@ -228,7 +246,9 @@ fun Login() {
                 ) {
                     Text(
                         text = "Log in",
-                        style = MaterialTheme.typography.displaySmall.copy(
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 18.sp,
                             color = Color.White
                         )
                     )
@@ -244,9 +264,10 @@ fun Login() {
                 ) {
                     Text(
                         text = "SIGN UP",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF2F2F2F)
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 18.sp,
+                            color = BlackFont
                         )
                     )
                 }
@@ -283,7 +304,7 @@ fun RenderLogo() {
             Image(
                 painter = painterResource(id = R.drawable.ic_logo),
                 contentDescription = "Logo",
-                modifier = Modifier.size(30.dp)
+                modifier = Modifier.fillMaxSize().padding(12.dp)
             )
         }
 
@@ -312,12 +333,10 @@ fun RenderTextInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 2.dp),
-            style = MaterialTheme.typography.labelSmall.copy(
-                color = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    Color(0xFF9B9B9B)
-                }
+            style = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 14.sp,
+                color = if (!isError) Grey2 else Color.Red
             )
         )
 
@@ -326,9 +345,10 @@ fun RenderTextInput(
             onValueChange = onValueChange,
             singleLine = true,
             isError = isError,
-            textStyle = MaterialTheme.typography.bodySmall.copy(
-                color = Color.Black
-            ),
+            textStyle = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 14.sp,
+                color = if (!isError) Grey2 else Color.Red),
             modifier = Modifier
                 .fillMaxWidth()
                 .defaultMinSize(minHeight = 1.dp)
@@ -355,12 +375,10 @@ fun RenderPasswordInput(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(start = 2.dp),
-            style = MaterialTheme.typography.labelSmall.copy(
-                color = if (isError) {
-                    MaterialTheme.colorScheme.error
-                } else {
-                    Color(0xFF9B9B9B)
-                }
+            style = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 14.sp,
+                color = if (!isError) Grey2 else Color.Red
             )
         )
 
@@ -369,8 +387,10 @@ fun RenderPasswordInput(
             onValueChange = onValueChange,
             singleLine = true,
             isError = isError,
-            textStyle = MaterialTheme.typography.bodySmall.copy(
-                color = Color.Black
+            textStyle = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 14.sp,
+                color = if (!isError) Grey2 else Color.Red
             ),
             modifier = Modifier
                 .fillMaxWidth()

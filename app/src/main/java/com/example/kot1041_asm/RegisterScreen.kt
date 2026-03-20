@@ -6,34 +6,22 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,13 +33,19 @@ import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import com.example.kot1041_asm.ui.theme.BlackFont
+import com.example.kot1041_asm.ui.theme.Grey
+import com.example.kot1041_asm.ui.theme.Grey2
 import com.example.kot1041_asm.ui.theme.KOT1041_ASMTheme
+import com.example.kot1041_asm.ui.theme.MerriweatherBold
+import com.example.kot1041_asm.ui.theme.NunitoSansBold
+import com.example.kot1041_asm.ui.theme.NunitoSansSemiBold
 
 class RegisterScreen : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -98,8 +92,12 @@ fun SignUp() {
             Text(
                 text = "WELCOME",
                 modifier = Modifier.fillMaxWidth(),
-                style = MaterialTheme.typography.displayLarge.copy(
-                    color = Color(0xFF303030)
+                style = TextStyle(
+                    fontFamily = MerriweatherBold,
+                    fontSize = 24.sp,
+                    lineHeight = 45.sp,
+                    letterSpacing = 0.05.em,
+                    color = BlackFont
                 )
             )
 
@@ -244,7 +242,9 @@ fun SignUp() {
                 ) {
                     Text(
                         text = "SIGN UP",
-                        style = MaterialTheme.typography.displaySmall.copy(
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 18.sp,
                             color = Color.White
                         )
                     )
@@ -258,8 +258,10 @@ fun SignUp() {
                 ) {
                     Text(
                         text = "Already have account? ",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = Color(0xFF909090)
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 14.sp,
+                            color = Grey
                         )
                     )
 
@@ -267,13 +269,15 @@ fun SignUp() {
                         onClick = {(context as? Activity)?.finish()},
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
                         colors = ButtonDefaults.textButtonColors(
-                            contentColor = Color(0xFF303030)
+                            contentColor = BlackFont
                         )
                     ) {
                         Text(
                             text = "SIGN IN",
-                            style = MaterialTheme.typography.titleMedium.copy(
-                                color = Color(0xFF303030)
+                            style = TextStyle(
+                                fontFamily = NunitoSansBold,
+                                fontSize = 14.sp,
+                                color = BlackFont
                             )
                         )
                     }

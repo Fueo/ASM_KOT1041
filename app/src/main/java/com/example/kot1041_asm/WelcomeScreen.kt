@@ -17,24 +17,30 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.kot1041_asm.LoginScreen // Nhớ kiểm tra lại đường dẫn import này cho đúng với file LoginScreen của bạn
+import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
+import com.example.kot1041_asm.LoginScreen
 import com.example.kot1041_asm.R
+import com.example.kot1041_asm.ui.theme.BlackFont
+import com.example.kot1041_asm.ui.theme.GelasioBold
+import com.example.kot1041_asm.ui.theme.GelasioSemiBold
+import com.example.kot1041_asm.ui.theme.Grey
 import com.example.kot1041_asm.ui.theme.KOT1041_ASMTheme
+import com.example.kot1041_asm.ui.theme.NunitoSansRegular
 import com.example.kot1041_asm.ui.theme.Primary
-import com.example.kot1041_asm.ui.theme.TextSecondary
-import com.example.kot1041_asm.ui.theme.blackFont
 
 @Composable
 fun WelcomeScreen(
@@ -53,11 +59,8 @@ fun WelcomeScreen(
         WelcomeContent(
             modifier = Modifier.fillMaxSize(),
             onGetStartedClick = {
-                // 1. Mở màn hình Login
                 val intent = Intent(context, LoginScreen::class.java)
                 context.startActivity(intent)
-
-                // 2. Kết thúc màn hình Welcome hiện tại (Đóng hoàn toàn)
                 (context as? Activity)?.finish()
             }
         )
@@ -86,21 +89,21 @@ private fun WelcomeContent(
         modifier = modifier
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 32.dp),
+            .padding(horizontal = 30.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(260.dp))
+        Spacer(modifier = Modifier.height(231.dp))
 
         WelcomeTitle(
             modifier = Modifier.fillMaxWidth()
         )
 
-        Spacer(modifier = Modifier.height(26.dp))
+        Spacer(modifier = Modifier.height(35.dp))
 
         WelcomeDescription(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 6.dp)
         )
 
         Spacer(modifier = Modifier.weight(1f))
@@ -113,8 +116,7 @@ private fun WelcomeContent(
                 .height(54.dp)
         )
 
-        // Tăng chiều cao Spacer này từ 36.dp lên 100.dp để đẩy nút Get Started lên cao hơn
-        Spacer(modifier = Modifier.height(100.dp))
+        Spacer(modifier = Modifier.height(150.dp))
     }
 }
 
@@ -124,18 +126,28 @@ private fun WelcomeTitle(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(5.dp)
     ) {
         Text(
             text = "MAKE YOUR",
-            style = MaterialTheme.typography.displayMedium,
-            color = TextSecondary
+            style = TextStyle(
+                fontFamily = GelasioSemiBold,
+                fontSize = 24.sp,
+                letterSpacing = 0.05.em
+            ),
+            color = Color(0xFF606060)
         )
 
         Text(
             text = "HOME BEAUTIFUL",
-            style = MaterialTheme.typography.displayLarge,
-            color = blackFont
+            style = TextStyle(
+                fontFamily = GelasioBold,
+                fontSize = 30.sp,
+                letterSpacing = 0.sp
+            ),
+            color = BlackFont,
+            maxLines =  1,
+            softWrap = false
         )
     }
 }
@@ -144,22 +156,27 @@ private fun WelcomeTitle(
 private fun WelcomeDescription(
     modifier: Modifier = Modifier
 ) {
-    Column {
-        Text(
-            text = "The best simple place where you\ndiscover most wonderful furnitures\nand make your home beautiful",
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray,
-            textAlign = TextAlign.Justify,
-        )
-    }
+    val configuration = LocalConfiguration.current
+    val padding10Percent = configuration.screenWidthDp.dp * 0.05f
+    Text(
+        text = "The best simple place where you discover most wonderful furnitures and make your home beautiful",
+        modifier = Modifier.padding(start = padding10Percent),
+        style = TextStyle(
+            fontFamily = NunitoSansRegular,
+            fontSize = 18.sp,
+            lineHeight = 35.sp,
+            letterSpacing = 0.sp
+        ),
+        color = Grey,
+        textAlign = TextAlign.Start // Đổi sang căn trái (Start)
+    )
 }
 
 @Composable
 private fun PrimaryActionButton(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.padding(start = 12.dp)
+    modifier: Modifier = Modifier
 ) {
     Button(
         onClick = onClick,
@@ -171,7 +188,10 @@ private fun PrimaryActionButton(
     ) {
         Text(
             text = text,
-            style = MaterialTheme.typography.displaySmall.copy(
+            style = TextStyle(
+                fontFamily = GelasioSemiBold,
+                fontSize = 18.sp,
+                letterSpacing = 0.sp,
                 color = Color.White
             )
         )

@@ -5,30 +5,27 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.kot1041_asm.ui.theme.*
 
 class CheckoutScreen : ComponentActivity() {
@@ -42,7 +39,7 @@ class CheckoutScreen : ComponentActivity() {
             KOT1041_ASMTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFFF5F5F5) // Màu nền hơi xám nhẹ để nổi bật các Card trắng
+                    color = Color(0xFFF5F5F5) // Nền xám nhạt để các Card màu trắng nổi bật
                 ) {
                     Checkout(orderTotal = orderTotal)
                 }
@@ -61,51 +58,63 @@ fun Checkout(orderTotal: Double) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .verticalScroll(scrollState)
-            .padding(bottom = 24.dp)
+            .background(Color(0xFFF5F5F5)) // Đổi nền xám nhạt
     ) {
-        // Header
+        // Header (Cố định ở trên)
         CheckoutHeader(onBackClick = { (context as? Activity)?.finish() })
 
-        Spacer(modifier = Modifier.height(20.dp))
+        // Nội dung có thể cuộn (Sử dụng weight để đẩy nút Submit xuống đáy)
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f) // Chiếm toàn bộ không gian còn lại
+                .verticalScroll(scrollState)
+                .padding(horizontal = 20.dp)
+        ) {
+            Spacer(modifier = Modifier.height(16.dp))
 
-        Column(modifier = Modifier.padding(horizontal = 20.dp)) {
             // 1. Shipping Address Section
             SectionTitle(title = "Shipping Address", onEditClick = { /* Handle edit */ })
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             ShippingAddressCard(
                 name = "Bruno Fernandes",
                 address = "25 rue Robert Latouche, Nice, 06200, Côte D'azur, France"
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 2. Payment Section
             SectionTitle(title = "Payment", onEditClick = { /* Handle edit */ })
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             PaymentCard(
                 cardNumber = "**** **** **** 3947",
-                logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" // Mock Mastercard logo
+                logoRes = R.drawable.card // Sử dụng hình ảnh drawable tải về
             )
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // 3. Delivery Method Section
             SectionTitle(title = "Delivery method", onEditClick = { /* Handle edit */ })
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(10.dp))
             DeliveryMethodCard(
                 methodName = "Fast (2-3days)",
-                logoUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b3/DHL_Express_logo.svg/2560px-DHL_Express_logo.svg.png" // Mock DHL logo
+                logoRes = R.drawable.dhl // Sử dụng hình ảnh drawable tải về
             )
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             // 4. Summary Card
             SummaryCard(orderPrice = orderTotal, deliveryPrice = deliveryFee, totalPrice = total)
 
-            Spacer(modifier = Modifier.height(30.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
-            // 5. Submit Button
+        // 5. Submit Button (Luôn hiển thị ở dưới cùng màn hình)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 24.dp)
+        ) {
             Button(
                 onClick = {
                     Toast.makeText(context, "Order Submitted Successfully!", Toast.LENGTH_SHORT).show()
@@ -114,13 +123,20 @@ fun Checkout(orderTotal: Double) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(60.dp)
-                    .shadow(elevation = 8.dp, shape = RoundedCornerShape(12.dp), spotColor = Primary),
-                colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                shape = RoundedCornerShape(12.dp)
+                    .shadow(elevation = 6.dp, shape = RoundedCornerShape(8.dp), spotColor = Color(0xFF303030)),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF303030),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(8.dp)
             ) {
                 Text(
                     text = "SUBMIT ORDER",
-                    style = Typography.titleMedium.copy(color = Color.White, fontSize = 18.sp)
+                    style = TextStyle(
+                        fontFamily = NunitoSansSemiBold,
+                        fontSize = 18.sp,
+                        color = Color.White
+                    )
                 )
             }
         }
@@ -137,17 +153,20 @@ fun CheckoutHeader(onBackClick: () -> Unit) {
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
-                imageVector = Icons.Outlined.ArrowBack,
+                painter = painterResource(id = R.drawable.ic_back),
                 contentDescription = "Back",
-                modifier = Modifier.size(20.dp),
-                tint = Primary
+                modifier = Modifier.size(24.dp),
+                tint = Color(0xFF303030)
             )
         }
 
         Text(
             text = "Check out",
-            style = Typography.displaySmall,
-            color = Primary,
+            style = TextStyle(
+                fontFamily = MerriweatherBold,
+                fontSize = 18.sp,
+                color = Color(0xFF303030)
+            ),
             modifier = Modifier.weight(1f),
             textAlign = TextAlign.Center
         )
@@ -165,13 +184,16 @@ fun SectionTitle(title: String, onEditClick: () -> Unit) {
     ) {
         Text(
             text = title,
-            style = Typography.titleMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.SemiBold),
-            color = TextSecondary
+            style = TextStyle(
+                fontFamily = NunitoSansSemiBold,
+                fontSize = 18.sp,
+                color = Color(0xFF909090)
+            )
         )
         Icon(
-            imageVector = Icons.Outlined.Edit,
+            painter = painterResource(id = R.drawable.ic_edit),
             contentDescription = "Edit $title",
-            tint = TextSecondary,
+            tint = Color(0xFF909090),
             modifier = Modifier
                 .size(20.dp)
                 .clickable { onEditClick() }
@@ -184,46 +206,53 @@ fun ShippingAddressCard(name: String, address: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
             .background(Color.White, RoundedCornerShape(8.dp))
     ) {
         Text(
             text = name,
-            style = Typography.titleMedium.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold),
-            color = Primary,
+            style = TextStyle(
+                fontFamily = NunitoSansBold,
+                fontSize = 18.sp,
+                color = Color(0xFF303030)
+            ),
             modifier = Modifier.padding(16.dp)
         )
-        HorizontalDivider(color = SecondaryButtonBG, thickness = 1.dp)
+        HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
         Text(
             text = address,
-            style = Typography.bodySmall.copy(fontSize = 14.sp, lineHeight = 22.sp),
-            color = TextSecondary,
+            style = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 14.sp,
+                lineHeight = 22.sp,
+                color = Color(0xFF909090)
+            ),
             modifier = Modifier.padding(16.dp)
         )
     }
 }
 
 @Composable
-fun PaymentCard(cardNumber: String, logoUrl: String) {
+fun PaymentCard(cardNumber: String, logoRes: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo Thẻ
+        // Logo Thẻ - Đổ bóng trước, fill nền trắng sau để bóng không lẹm vào trong
         Box(
             modifier = Modifier
                 .size(width = 64.dp, height = 40.dp)
-                .background(Color.White, RoundedCornerShape(8.dp))
                 .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
+                .background(Color.White, RoundedCornerShape(8.dp))
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            AsyncImage(
-                model = logoUrl,
+            Image(
+                painter = painterResource(id = logoRes),
                 contentDescription = "Card Logo",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
@@ -234,18 +263,21 @@ fun PaymentCard(cardNumber: String, logoUrl: String) {
 
         Text(
             text = cardNumber,
-            style = Typography.bodySmall.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
-            color = Primary
+            style = TextStyle(
+                fontFamily = NunitoSansSemiBold,
+                fontSize = 14.sp,
+                color = Color(0xFF303030)
+            )
         )
     }
 }
 
 @Composable
-fun DeliveryMethodCard(methodName: String, logoUrl: String) {
+fun DeliveryMethodCard(methodName: String, logoRes: Int) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -254,25 +286,28 @@ fun DeliveryMethodCard(methodName: String, logoUrl: String) {
         Box(
             modifier = Modifier
                 .size(width = 80.dp, height = 40.dp)
-                .background(Color.White, RoundedCornerShape(8.dp))
                 .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
+                .background(Color.White, RoundedCornerShape(8.dp))
                 .padding(8.dp),
             contentAlignment = Alignment.Center
         ) {
-            AsyncImage(
-                model = logoUrl,
+            Image(
+                painter = painterResource(id = logoRes),
                 contentDescription = "Delivery Logo",
                 contentScale = ContentScale.Fit,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(20.dp))
 
         Text(
             text = methodName,
-            style = Typography.bodySmall.copy(fontSize = 16.sp, fontWeight = FontWeight.SemiBold),
-            color = Primary
+            style = TextStyle(
+                fontFamily = NunitoSansSemiBold,
+                fontSize = 14.sp,
+                color = Color(0xFF303030)
+            )
         )
     }
 }
@@ -282,19 +317,19 @@ fun SummaryCard(orderPrice: Double, deliveryPrice: Double, totalPrice: Double) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 4.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
+            .shadow(elevation = 2.dp, shape = RoundedCornerShape(8.dp), spotColor = Color.LightGray)
             .background(Color.White, RoundedCornerShape(8.dp))
             .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        SummaryRow(label = "Order:", value = orderPrice, isBold = false)
-        SummaryRow(label = "Delivery:", value = deliveryPrice, isBold = false)
-        SummaryRow(label = "Total:", value = totalPrice, isBold = true)
+        SummaryRow(label = "Order:", value = orderPrice, isTotal = false)
+        SummaryRow(label = "Delivery:", value = deliveryPrice, isTotal = false)
+        SummaryRow(label = "Total:", value = totalPrice, isTotal = true)
     }
 }
 
 @Composable
-fun SummaryRow(label: String, value: Double, isBold: Boolean) {
+fun SummaryRow(label: String, value: Double, isTotal: Boolean) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -302,16 +337,19 @@ fun SummaryRow(label: String, value: Double, isBold: Boolean) {
     ) {
         Text(
             text = label,
-            style = Typography.bodySmall.copy(fontSize = 16.sp),
-            color = TextSecondary
+            style = TextStyle(
+                fontFamily = NunitoSansRegular,
+                fontSize = 16.sp,
+                color = Color(0xFF909090)
+            )
         )
         Text(
             text = "$ ${String.format("%.2f", value)}",
-            style = Typography.titleMedium.copy(
+            style = TextStyle(
+                fontFamily = if (isTotal) NunitoSansBold else NunitoSansSemiBold,
                 fontSize = 16.sp,
-                fontWeight = if (isBold) FontWeight.Bold else FontWeight.SemiBold
-            ),
-            color = Primary
+                color = Color(0xFF303030)
+            )
         )
     }
 }
