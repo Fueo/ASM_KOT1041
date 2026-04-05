@@ -49,16 +49,18 @@ interface ApiService {
     @POST("products")
     suspend fun createProduct(@Body product: Product): Response<ApiResponse<Product>>
 
+    @GET("products/popular")
+    suspend fun getProductPopular(): Response<ApiResponse<List<Product>>>
+
+    // ==========================================
     // 4. BOOKMARK ROUTES (/bookmarks)
+    // ==========================================
     @GET("bookmarks/account/{accountId}")
     suspend fun getBookmarksByAccount(@Path("accountId") accountId: String): Response<ApiResponse<List<Bookmark>>>
 
-    @POST("bookmarks")
-    suspend fun createBookmark(@Body request: BookmarkRequest): Response<ApiResponse<Bookmark>>
-
-    @DELETE("bookmarks/{id}")
-    suspend fun deleteBookmark(@Path("id") bookmarkId: String): Response<ApiResponse<Bookmark>>
-
+    // Thay thế POST (create) và DELETE (delete) thành 1 hàm Toggle duy nhất
+    @POST("bookmarks/toggle")
+    suspend fun toggleBookmark(@Body request: BookmarkRequest): Response<ApiResponse<Bookmark>>
     // ==========================================
     // 5. BILL / ORDER ROUTES (/bills) - ĐÃ CẬP NHẬT CHUẨN BE
     // ==========================================

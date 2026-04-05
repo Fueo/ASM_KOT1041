@@ -1,5 +1,7 @@
 package com.example.kot1041_asm.ui.screens
 
+import android.content.Context
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -25,16 +27,10 @@ import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kot1041_asm.R
+import com.example.kot1041_asm.data.model.CartItem
+import com.example.kot1041_asm.data.repository.AppRepository
 import com.example.kot1041_asm.ui.theme.*
-
-// Data model cho giỏ hàng
-data class CartItemModel(
-    val id: String,
-    val name: String,
-    val price: Double,
-    var quantity: Int,
-    val imageUrl: String
-)
+import kotlinx.coroutines.launch
 
 @Composable
 fun Cart(
@@ -42,16 +38,39 @@ fun Cart(
     onCheckoutClick: (Double) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val repository = remember { AppRepository() }
 
-    val cartItems = remember {
-        mutableStateListOf(
-            CartItemModel("1", "Minimal Stand", 25.00, 1, "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop"),
-            CartItemModel("2", "Coffee Table", 20.00, 1, "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=600&auto=format&fit=crop"),
-            CartItemModel("3", "Minimal Desk", 50.00, 1, "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=600&auto=format&fit=crop")
-        )
+    // Lấy AccountID từ SharedPreferences
+    val sharedPref = remember { context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE) }
+    val currentAccountId = sharedPref.getString("user_id", "") ?: ""
+
+    // States
+    var cartItems by remember { mutableStateOf<List<CartItem>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    // Hàm load dữ liệu giỏ hàng
+    fun loadCartData() {
+        if (currentAccountId.isEmpty()) return
+        coroutineScope.launch {
+            isLoading = true
+            val result = repository.getCart(currentAccountId)
+            if (result.isSuccess) {
+                cartItems = result.getOrNull() ?: emptyList()
+            } else {
+                Toast.makeText(context, "Failed to load cart", Toast.LENGTH_SHORT).show()
+            }
+            isLoading = false
+        }
     }
 
-    val totalPrice = cartItems.sumOf { it.price * it.quantity }
+    // 1. Fetch dữ liệu khi vừa vào màn hình
+    LaunchedEffect(Unit) {
+        loadCartData()
+    }
+
+    // Tính tổng tiền dựa trên giá sản phẩm và số lượng
+    val totalPrice = cartItems.sumOf { (it.ProductID?.Price ?: 0.0) * it.Quantity }
 
     Column(
         modifier = Modifier
@@ -61,43 +80,83 @@ fun Cart(
         // 1. Header
         CartHeader(onBackClick = onBackClick)
 
-        // 2. Danh sách sản phẩm
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 20.dp),
-            contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            items(cartItems, key = { it.id }) { item ->
-                CartItemRow(
-                    item = item,
-                    onIncrease = {
-                        val index = cartItems.indexOf(item)
-                        if (index != -1) {
-                            cartItems[index] = item.copy(quantity = item.quantity + 1)
-                        }
-                    },
-                    onDecrease = {
-                        val index = cartItems.indexOf(item)
-                        if (index != -1 && item.quantity > 1) {
-                            cartItems[index] = item.copy(quantity = item.quantity - 1)
-                        }
-                    },
-                    onRemove = {
-                        cartItems.remove(item)
-                    }
+        // 2. Danh sách sản phẩm hoặc Thông báo trống
+        // Đã thêm fillMaxSize() vào Box để đảm bảo căn giữa theo cả chiều dọc và ngang
+        Box(modifier = Modifier.weight(1f).fillMaxSize()) {
+            if (isLoading && cartItems.isEmpty()) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = Color(0xFF303030)
                 )
+            } else if (cartItems.isEmpty()) {
+                Text(
+                    text = "Your cart is empty",
+                    style = TextStyle(fontFamily = NunitoSansRegular, fontSize = 16.sp, color = Color(0xFF909090)),
+                    modifier = Modifier.align(Alignment.Center) // Căn giữa hoàn hảo
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp),
+                    contentPadding = PaddingValues(top = 16.dp, bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    items(cartItems, key = { it._id }) { item ->
+                        CartItemRow(
+                            item = item,
+                            onIncrease = {
+                                coroutineScope.launch {
+                                    val newQty = item.Quantity + 1
+                                    // Cập nhật UI ngay lập tức
+                                    cartItems = cartItems.map { if (it._id == item._id) it.copy(Quantity = newQty) else it }
+                                    // Gọi API update
+                                    repository.updateCartQuantity(item._id, newQty)
+                                }
+                            },
+                            onDecrease = {
+                                if (item.Quantity > 1) {
+                                    coroutineScope.launch {
+                                        val newQty = item.Quantity - 1
+                                        cartItems = cartItems.map { if (it._id == item._id) it.copy(Quantity = newQty) else it }
+                                        repository.updateCartQuantity(item._id, newQty)
+                                    }
+                                }
+                            },
+                            onRemove = {
+                                coroutineScope.launch {
+                                    // Xoá khỏi UI ngay lập tức
+                                    cartItems = cartItems.filter { it._id != item._id }
+                                    // Gọi API xoá
+                                    val res = repository.removeFromCart(item._id)
+                                    if (res.isSuccess) {
+                                        Toast.makeText(context, "Item removed", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        // Nếu xoá lỗi trên server, load lại data cũ
+                                        loadCartData()
+                                        Toast.makeText(context, "Failed to remove item", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }
+                        )
 
-                Spacer(modifier = Modifier.height(16.dp))
-                HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp)
+                    }
+                }
             }
         }
 
         // 3. Phần thanh toán (Promo Code & Total)
         CheckoutSection(
             totalPrice = totalPrice,
-            onCheckoutClick = { onCheckoutClick(totalPrice) }
+            onCheckoutClick = {
+                if (cartItems.isEmpty()) {
+                    Toast.makeText(context, "Your cart is empty!", Toast.LENGTH_SHORT).show()
+                } else {
+                    onCheckoutClick(totalPrice)
+                }
+            }
         )
     }
 }
@@ -130,26 +189,29 @@ fun CartHeader(onBackClick: () -> Unit) {
             textAlign = TextAlign.Center
         )
 
-        // Spacer để cân bằng IconButton bên trái, giúp title nằm ở giữa
         Spacer(modifier = Modifier.size(48.dp))
     }
 }
 
 @Composable
 fun CartItemRow(
-    item: CartItemModel,
+    item: CartItem,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onRemove: () -> Unit
 ) {
+    // Trích xuất dữ liệu từ object Product
+    val productName = item.ProductID?.ProductName ?: "Unknown Product"
+    val productPrice = item.ProductID?.Price ?: 0.0
+    val imageUrl = item.ProductID?.productImage?.firstOrNull()?.url ?: ""
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Ảnh sản phẩm
         AsyncImage(
-            model = item.imageUrl,
-            contentDescription = item.name,
+            model = imageUrl,
+            contentDescription = productName,
             contentScale = ContentScale.Crop,
             modifier = Modifier
                 .size(100.dp)
@@ -159,10 +221,7 @@ fun CartItemRow(
 
         Spacer(modifier = Modifier.width(16.dp))
 
-        // Thông tin
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -170,7 +229,7 @@ fun CartItemRow(
             ) {
                 Column {
                     Text(
-                        text = item.name,
+                        text = productName,
                         style = TextStyle(
                             fontFamily = NunitoSansSemiBold,
                             fontSize = 14.sp,
@@ -179,7 +238,7 @@ fun CartItemRow(
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
-                        text = "$ ${String.format("%.2f", item.price)}",
+                        text = "$ ${String.format("%.2f", productPrice)}",
                         style = TextStyle(
                             fontFamily = NunitoSansBold,
                             fontSize = 16.sp,
@@ -188,7 +247,6 @@ fun CartItemRow(
                     )
                 }
 
-                // Nút Xóa
                 Icon(
                     painter = painterResource(id = R.drawable.ic_close),
                     contentDescription = "Remove",
@@ -201,12 +259,10 @@ fun CartItemRow(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Selector Số lượng
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Nút Cộng
                 Box(
                     modifier = Modifier
                         .size(30.dp)
@@ -224,7 +280,7 @@ fun CartItemRow(
                 }
 
                 Text(
-                    text = item.quantity.toString().padStart(2, '0'),
+                    text = item.Quantity.toString().padStart(2, '0'),
                     style = TextStyle(
                         fontFamily = NunitoSansSemiBold,
                         fontSize = 18.sp,
@@ -233,7 +289,6 @@ fun CartItemRow(
                     )
                 )
 
-                // Nút Trừ
                 Box(
                     modifier = Modifier
                         .size(30.dp)
@@ -266,7 +321,6 @@ fun CheckoutSection(
             .fillMaxWidth()
             .padding(horizontal = 20.dp, vertical = 20.dp)
     ) {
-        // Ô nhập Promo code
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -300,7 +354,6 @@ fun CheckoutSection(
                 singleLine = true
             )
 
-            // Nút áp dụng Promo Code
             Box(
                 modifier = Modifier
                     .size(44.dp)
@@ -320,7 +373,6 @@ fun CheckoutSection(
 
         Spacer(modifier = Modifier.height(28.dp))
 
-        // Dòng Total
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -349,9 +401,8 @@ fun CheckoutSection(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // Nút Check out
         Button(
-            onClick = onCheckoutClick, // Sử dụng Callback
+            onClick = onCheckoutClick,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)

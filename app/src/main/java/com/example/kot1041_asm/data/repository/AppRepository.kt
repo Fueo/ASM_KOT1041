@@ -68,12 +68,21 @@ class AppRepository {
 
     suspend fun getProductDetail(id: String): Result<Product> = safeApiCall { api.getProductDetail(id) }
 
+    suspend fun getProductPopular(): Result<List<Product>> = safeApiCall {
+        api.getProductPopular()
+    }
+
     // =========================================
     // BOOKMARKS
     // =========================================
-    suspend fun getBookmarks(accountId: String): Result<List<Bookmark>> = safeApiCall { api.getBookmarksByAccount(accountId) }
-    suspend fun addBookmark(request: BookmarkRequest): Result<Bookmark> = safeApiCall { api.createBookmark(request) }
-    suspend fun removeBookmark(bookmarkId: String): Result<Bookmark> = safeApiCall { api.deleteBookmark(bookmarkId) }
+    suspend fun getBookmarks(accountId: String): Result<List<Bookmark>> = safeApiCall {
+        api.getBookmarksByAccount(accountId)
+    }
+
+    // Gộp hàm add và remove thành 1 hàm toggle
+    suspend fun toggleBookmark(request: BookmarkRequest): Result<Bookmark> = safeApiCall {
+        api.toggleBookmark(request)
+    }
 
     // =========================================
     // CART

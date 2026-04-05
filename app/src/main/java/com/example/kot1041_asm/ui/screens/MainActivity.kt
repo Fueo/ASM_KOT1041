@@ -138,7 +138,6 @@ fun HomeRoute(
             ) {
                 composable("tab_home") {
                     HomeScreen(
-                        onAddToCart = { /* Xử lý add to cart */ },
                         onSearchClick = { navController.navigate("search") },
                         onCartClick = { navController.navigate("cart") },
                         onProductClick = { productId ->
@@ -153,14 +152,32 @@ fun HomeRoute(
                         }
                     )
                 }
+
+                // --- ĐÃ CẬP NHẬT CÁC HÀM CHUYỂN TRANG CHO BOOKMARK ---
                 composable("tab_bookmark") {
-                    BookmarkScreen()
+                    BookmarkScreen(
+                        onSearchClick = { navController.navigate("search") },
+                        onCartClick = { navController.navigate("cart") },
+                        onProductClick = { productId ->
+                            navController.navigate("product_detail/$productId")
+                        }
+                    )
                 }
+
                 composable("tab_notification") {
                     NotificationScreen()
                 }
+
                 composable("tab_profile") {
-                    ProfileScreen()
+                    ProfileScreen(
+                        onSearchClick = { navController.navigate("search") },
+                        onLogoutClick = {
+                            updateLoginState(false)
+                            navController.navigate("welcome") {
+                                popUpTo(0) { inclusive = true } // Clear toàn bộ backstack
+                            }
+                        }
+                    )
                 }
             }
         }

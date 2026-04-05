@@ -5,7 +5,7 @@ package com.example.kot1041_asm.data.model
  * Backend Schema: Account
  */
 data class Account(
-    val _id: String,
+    val id: String,
     val Email: String,
     val FullName: String,
     val Password: String? = null, // FE thường không nhận trường này trừ khi login/register
@@ -42,7 +42,7 @@ data class Product(
     val Description: String? = "",
     val Price: Double,
     // Ánh xạ thành model Category do BE thường gọi .populate("CateID")
-    val CateID: Category?,
+    val CateID: Any?,
     val productImage: List<ProductImage> = emptyList(),
     val rating: Double = 0.0,
     val numReviews: Int = 0,

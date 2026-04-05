@@ -1,5 +1,7 @@
 package com.example.kot1041_asm.ui.screens
 
+import AddToCartRequest
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,7 +38,9 @@ import com.example.kot1041_asm.R
 import com.example.kot1041_asm.data.api.RetrofitClient
 import com.example.kot1041_asm.data.model.Category
 import com.example.kot1041_asm.data.model.Product
+import com.example.kot1041_asm.data.repository.AppRepository
 import com.example.kot1041_asm.ui.theme.*
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -44,76 +48,100 @@ import kotlinx.coroutines.withContext
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onAddToCart: () -> Unit = {},
     onSearchClick: () -> Unit = {},
     onCartClick: () -> Unit = {},
     onProductClick: (String) -> Unit = {},
-    onLogoutClick: () -> Unit = {} // Vẫn giữ callback này phòng trường hợp bạn cần sau này
+    onLogoutClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
+    val repository = remember { AppRepository() }
 
+    // --- 1. LẤY ACCOUNT ID TỪ SHAREDPREFERENCES ---
+    val sharedPref = remember { context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE) }
+    val currentAccountId = sharedPref.getString("user_id", "") ?: ""
+
+    // --- STATE CHO UI ---
     var cartCount by remember { mutableStateOf(0) }
-
-    // --- STATE CHO API ---
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var products by remember { mutableStateOf<List<Product>>(emptyList()) }
-
-    // selectedCateId mặc định là "" (rỗng) để lấy tất cả sản phẩm ("Popular")
     var selectedCateId by remember { mutableStateOf("") }
     var isLoadingProducts by remember { mutableStateOf(false) }
 
-    // 1. Fetch Categories khi vừa vào màn hình
+    // --- 2. FETCH DỮ LIỆU BAN ĐẦU (CATEGORIES & GIỎ HÀNG) ---
     LaunchedEffect(Unit) {
+        // Lấy số lượng giỏ hàng thật từ API
+        if (currentAccountId.isNotEmpty()) {
+            val cartResult = repository.getCart(currentAccountId)
+            if (cartResult.isSuccess) {
+                val cartItems = cartResult.getOrNull() ?: emptyList()
+                cartCount = cartItems.sumOf { it.Quantity }
+            }
+        }
+
+        // Lấy danh mục sản phẩm
         try {
             val response = withContext(Dispatchers.IO) { RetrofitClient.instance.getAllCategories() }
             if (response.isSuccessful && response.body() != null) {
-                // BE có thể đã trả về cả mảng trong đó item đầu tiên là "Popular"
                 categories = response.body()?.data ?: emptyList()
-
-                // Mặc định chọn phần tử đầu tiên trong mảng
+                // Mặc định chọn tab đầu tiên (thường là Popular)
                 if (categories.isNotEmpty()) {
                     selectedCateId = categories[0]._id
                 }
             } else {
-                Toast.makeText(context, "Lỗi lấy danh mục", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Failed to load categories", Toast.LENGTH_SHORT).show()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Toast.makeText(context, "Lỗi mạng: ${e.message}", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Network error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
-    // 2. Fetch Products mỗi khi selectedCateId thay đổi
-    LaunchedEffect(selectedCateId) {
+    // --- 3. FETCH SẢN PHẨM (XỬ LÝ TAB POPULAR) ---
+    LaunchedEffect(selectedCateId, categories) {
+        if (selectedCateId.isBlank()) return@LaunchedEffect
+
         isLoadingProducts = true
         try {
-            // Nếu selectedCateId là ID của thẻ "Popular" (BE thiết lập là chuỗi rỗng hoặc giá trị cụ thể),
-            // bạn có thể truyền null hoặc chính selectedCateId đó vào getProducts()
-            val cateParam = if (selectedCateId.isBlank() || selectedCateId == "PopularId") null else selectedCateId
+            val selectedCategoryName = categories.find { it._id == selectedCateId }?.CateName ?: ""
+
+            // Kiểm tra xem tab hiện tại có phải là tab phổ biến không
+            val isPopularTab = selectedCateId == "PopularId" ||
+                    selectedCategoryName.contains("Popular", ignoreCase = true) ||
+                    (categories.isNotEmpty() && selectedCateId == categories[0]._id)
 
             val response = withContext(Dispatchers.IO) {
-                RetrofitClient.instance.getProducts(cateId = cateParam, page = 1, limit = 20)
+                if (isPopularTab) {
+                    RetrofitClient.instance.getProductPopular() // Gọi API Popular (Rating cao)
+                } else {
+                    RetrofitClient.instance.getProducts(cateId = selectedCateId, page = 1, limit = 20)
+                }
             }
+
             if (response.isSuccessful) {
                 products = response.body()?.data ?: emptyList()
             } else {
-                products = emptyList() // Trống khi lỗi
+                products = emptyList()
             }
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
-            Toast.makeText(context, "Lỗi lấy sản phẩm", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, "Failed to load products", Toast.LENGTH_SHORT).show()
             products = emptyList()
         } finally {
             isLoadingProducts = false
         }
     }
 
+    // --- GIAO DIỆN ---
     Column(modifier = modifier.fillMaxSize().background(Color.White)) {
         Spacer(modifier = Modifier.height(16.dp))
+
         HeaderSection(cartCount = cartCount, onSearchClick = onSearchClick, onCartClick = onCartClick)
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Render Categories
         RenderCategories(
             categories = categories,
             selectedCateId = selectedCateId,
@@ -122,25 +150,38 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        // Vùng hiển thị sản phẩm, chiếm toàn bộ không gian còn lại
         Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
             if (isLoadingProducts) {
-                CircularProgressIndicator(
-                    color = Color(0xFF303030)
-                )
+                CircularProgressIndicator(color = Color(0xFF303030))
             } else if (products.isEmpty()) {
                 Text(
-                    text = "Không có sản phẩm nào",
+                    text = "No products available",
                     style = TextStyle(fontFamily = NunitoSansRegular, color = Color(0xFF909090))
                 )
             } else {
-                // Nếu có sản phẩm thì render grid
                 RenderProductGrid(
                     products = products,
-                    onAddToCart = {
-                        cartCount++
-                        Toast.makeText(context, "Đã thêm vào giỏ hàng!", Toast.LENGTH_SHORT).show()
-                        onAddToCart()
+                    onAddToCart = { product ->
+                        if (currentAccountId.isEmpty()) {
+                            Toast.makeText(context, "Please login to add items", Toast.LENGTH_SHORT).show()
+                            return@RenderProductGrid
+                        }
+
+                        coroutineScope.launch {
+                            val request = AddToCartRequest(
+                                AccountID = currentAccountId,
+                                ProductID = product._id,
+                                Quantity = 1
+                            )
+                            val result = repository.addToCart(request)
+
+                            if (result.isSuccess) {
+                                cartCount++ // Cập nhật Badge ngay lập tức
+                                Toast.makeText(context, "Added to cart!", Toast.LENGTH_SHORT).show()
+                            } else {
+                                Toast.makeText(context, "Failed to add to cart", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     },
                     onProductClick = onProductClick
                 )
@@ -209,15 +250,13 @@ fun RenderCategories(
                         .background(if (isSelected) Color(0xFF303030) else Color(0xFFF5F5F5)),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Dùng ImageRequest để nhúng SvgDecoder vào AsyncImage
                     AsyncImage(
                         model = ImageRequest.Builder(context)
                             .data(category.iconUrl)
-                            .decoderFactory(SvgDecoder.Factory()) // Quan trọng: Bật bộ giải mã SVG
+                            .decoderFactory(SvgDecoder.Factory())
                             .build(),
                         contentDescription = category.CateName,
                         modifier = Modifier.size(24.dp),
-                        // Tint lại màu icon: Trắng nếu chọn, xám nếu không chọn
                         colorFilter = if (isSelected) ColorFilter.tint(Color.White) else ColorFilter.tint(Color(0xFF909090))
                     )
                 }
@@ -239,7 +278,7 @@ fun RenderCategories(
 @Composable
 fun RenderProductGrid(
     products: List<Product>,
-    onAddToCart: () -> Unit,
+    onAddToCart: (Product) -> Unit,
     onProductClick: (String) -> Unit
 ) {
     LazyVerticalGrid(
@@ -252,7 +291,7 @@ fun RenderProductGrid(
         items(products) { product ->
             ProductCard(
                 product = product,
-                onAddToCart = onAddToCart,
+                onAddToCart = { onAddToCart(product) },
                 onProductClick = onProductClick
             )
         }

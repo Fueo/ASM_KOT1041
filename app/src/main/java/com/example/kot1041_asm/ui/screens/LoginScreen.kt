@@ -31,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import LoginRequest // Đảm bảo bạn đã import đúng đường dẫn chứa class LoginRequest
+import android.content.Context
 
 @Composable
 fun Login(
@@ -196,10 +197,27 @@ fun Login(
                                 }
 
                                 if (response.isSuccessful && response.body() != null) {
-                                    Toast.makeText(context, "Đăng nhập thành công!", Toast.LENGTH_SHORT).show()
-                                    onSetLoggedIn(true)
+                                    val apiResponse = response.body()
+                                    // Dựa vào JSON bạn cung cấp, dữ liệu nằm trong trường "account"
+                                    // Nếu model ApiResponse của bạn dùng trường "data" thì hãy đổi apiResponse.account thành apiResponse.data
+                                    val account = apiResponse?.data
+
+                                    if (account != null) {
+                                        // --- LƯU VÀO SHAREDPREFERENCES ---
+                                        val sharedPref = context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE)
+                                        sharedPref.edit().apply {
+                                            putString("user_id", account.id) // id từ JSON
+                                            putString("user_email", account.Email)
+                                            putString("user_name", account.FullName)
+                                            putBoolean("is_logged_in", true)
+                                            apply()
+                                        }
+
+                                        Toast.makeText(context, "Login Successfully!", Toast.LENGTH_SHORT).show()
+                                        onSetLoggedIn(true)
+                                    }
                                 } else {
-                                    Toast.makeText(context, "Đăng nhập thất bại: ${response.message()}", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "Login Failed! Invalid Email or Password!", Toast.LENGTH_SHORT).show()
                                 }
                             } catch (e: Exception) {
                                 Toast.makeText(context, "Lỗi kết nối: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()

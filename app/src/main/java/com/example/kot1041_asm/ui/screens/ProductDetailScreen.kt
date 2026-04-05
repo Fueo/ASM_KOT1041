@@ -1,5 +1,8 @@
 package com.example.kot1041_asm.ui.screens
 
+import AddToCartRequest
+import BookmarkRequest
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -26,49 +29,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kot1041_asm.R
+import com.example.kot1041_asm.data.model.Product
+import com.example.kot1041_asm.data.repository.AppRepository
 import com.example.kot1041_asm.ui.theme.*
-
-// Data class để chứa dữ liệu chi tiết sản phẩm
-data class ProductDetailData(
-    val id: String,
-    val name: String,
-    val price: Double,
-    val rating: Double,
-    val reviews: Int,
-    val description: String,
-    val images: List<String>
-)
-
-// Hàm giả lập việc fetch dữ liệu từ API dựa trên ID
-fun getMockProductData(id: String): ProductDetailData {
-    return when (id) {
-        "1" -> ProductDetailData(
-            id = "1", name = "Black Simple Lamp", price = 12.0, rating = 4.0, reviews = 20,
-            description = "A beautiful black simple lamp perfectly designed for reading and focused work. Fits seamlessly in any modern workspace.",
-            images = listOf("https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?q=80&w=600&auto=format&fit=crop")
-        )
-        "2" -> ProductDetailData(
-            id = "2", name = "Minimal Stand", price = 50.0, rating = 4.5, reviews = 50,
-            description = "Minimal Stand is made of by natural wood. The design that is very simple and minimal. This is truly one of the best furnitures in any family for now. With 3 different colors, you can easily select the best match for your home.",
-            images = listOf("https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?q=80&w=600&auto=format&fit=crop")
-        )
-        "3" -> ProductDetailData(
-            id = "3", name = "Coffee Chair", price = 20.0, rating = 4.8, reviews = 120,
-            description = "Relaxing coffee chair with ergonomic design. Enjoy your morning coffee in absolute comfort.",
-            images = listOf("https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=600&auto=format&fit=crop", "https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?q=80&w=600&auto=format&fit=crop")
-        )
-        "4" -> ProductDetailData(
-            id = "4", name = "Simple Desk", price = 50.0, rating = 4.2, reviews = 35,
-            description = "A simple, sturdy wooden desk ideal for your home office or study room. Offers plenty of legroom.",
-            images = listOf("https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=600&auto=format&fit=crop")
-        )
-        else -> ProductDetailData(
-            id = id, name = "Unknown Product", price = 0.0, rating = 0.0, reviews = 0,
-            description = "No description available.",
-            images = listOf("https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop")
-        )
-    }
-}
+import kotlinx.coroutines.launch
 
 @Composable
 fun ProductDetail(
@@ -76,121 +40,212 @@ fun ProductDetail(
     onBackClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val repository = remember { AppRepository() }
+
+    // Lấy AccountID từ SharedPreferences
+    val sharedPref = remember { context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE) }
+    val currentAccountId = sharedPref.getString("user_id", "") ?: ""
+
+    // States
+    var product by remember { mutableStateOf<Product?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
     var quantity by remember { mutableStateOf(1) }
     var selectedColorIndex by remember { mutableStateOf(0) }
 
-    val productData = remember(productId) { getMockProductData(productId) }
+    // State cho Bookmark (Không cần bookmarkId nữa)
+    var isBookmarked by remember { mutableStateOf(false) }
 
-    // Màu sắc nút như thiết kế
+    // Màu sắc nút
     val colors = listOf(
-        Color(0xFF909090), // Xám
-        Color(0xFFB4916C), // Nâu nhạt
-        Color(0xFFE4CBAD)  // Be
+        Color(0xFF909090),
+        Color(0xFFB4916C),
+        Color(0xFFE4CBAD)
     )
+
+    // Lấy thông tin sản phẩm và kiểm tra trạng thái Bookmark
+    LaunchedEffect(productId) {
+        isLoading = true
+
+        // 1. Fetch Chi tiết sản phẩm
+        val result = repository.getProductDetail(productId)
+        if (result.isSuccess) {
+            product = result.getOrNull()
+        } else {
+            Toast.makeText(context, "Failed to load product details", Toast.LENGTH_SHORT).show()
+        }
+
+        // 2. Fetch danh sách Bookmark của User để xem sản phẩm này đã được lưu chưa
+        if (currentAccountId.isNotEmpty()) {
+            val bookmarkRes = repository.getBookmarks(currentAccountId)
+            if (bookmarkRes.isSuccess) {
+                val userBookmarks = bookmarkRes.getOrNull() ?: emptyList()
+                // Kiểm tra xem sản phẩm đã có trong danh sách yêu thích chưa
+                val existingBookmark = userBookmarks.find { it.ProductID?._id == productId }
+                isBookmarked = existingBookmark != null
+            }
+        }
+
+        isLoading = false
+    }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
     ) {
-        TopImageSection(
-            modifier = Modifier.weight(1f),
-            images = productData.images,
-            colors = colors,
-            selectedColorIndex = selectedColorIndex,
-            onColorSelected = { selectedColorIndex = it },
-            onBackClick = onBackClick // Dùng Callback thay vì finish()
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-            Text(
-                text = productData.name,
-                style = TextStyle(
-                    fontFamily = MerriweatherRegular,
-                    fontSize = 24.sp,
-                    color = Color(0xFF303030)
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = Color(0xFF303030))
+            }
+        } else if (product == null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text(
+                    text = "Product not found!",
+                    style = TextStyle(fontFamily = NunitoSansBold, fontSize = 18.sp, color = Color(0xFF909090))
                 )
+            }
+        } else {
+            val currentProduct = product!!
+            val images = currentProduct.productImage.map { it.url }.ifEmpty { listOf("") }
+
+            TopImageSection(
+                modifier = Modifier.weight(1f),
+                images = images,
+                colors = colors,
+                selectedColorIndex = selectedColorIndex,
+                onColorSelected = { selectedColorIndex = it },
+                onBackClick = onBackClick
             )
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
-            // Dòng Giá và Số lượng
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Column(modifier = Modifier.padding(horizontal = 24.dp)) {
                 Text(
-                    text = "$ ${if (productData.price % 1 == 0.0) productData.price.toInt() else productData.price}",
+                    text = currentProduct.ProductName,
                     style = TextStyle(
-                        fontFamily = NunitoSansBold,
-                        fontSize = 30.sp,
+                        fontFamily = MerriweatherRegular,
+                        fontSize = 24.sp,
                         color = Color(0xFF303030)
                     )
                 )
 
-                QuantitySelector(
-                    quantity = quantity,
-                    onIncrease = { quantity++ },
-                    onDecrease = { if (quantity > 1) quantity-- }
-                )
-            }
+                Spacer(modifier = Modifier.height(12.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Dòng Rating
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    painter = painterResource(id = R.drawable.ic_star),
-                    contentDescription = "Rating",
-                    tint = Color(0xFFF2C94C),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = productData.rating.toString(),
-                    style = TextStyle(
-                        fontFamily = NunitoSansBold,
-                        fontSize = 18.sp,
-                        color = Color(0xFF303030)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "$ ${if (currentProduct.Price % 1 == 0.0) currentProduct.Price.toInt() else currentProduct.Price}",
+                        style = TextStyle(
+                            fontFamily = NunitoSansBold,
+                            fontSize = 30.sp,
+                            color = Color(0xFF303030)
+                        )
                     )
-                )
-                Spacer(modifier = Modifier.width(16.dp))
+
+                    QuantitySelector(
+                        quantity = quantity,
+                        onIncrease = { quantity++ },
+                        onDecrease = { if (quantity > 1) quantity-- }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_star),
+                        contentDescription = "Rating",
+                        tint = Color(0xFFF2C94C),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = currentProduct.rating.toString(),
+                        style = TextStyle(
+                            fontFamily = NunitoSansBold,
+                            fontSize = 18.sp,
+                            color = Color(0xFF303030)
+                        )
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Text(
+                        text = "(${currentProduct.numReviews} reviews)",
+                        style = TextStyle(
+                            fontFamily = NunitoSansSemiBold,
+                            fontSize = 14.sp,
+                            color = Color(0xFF909090)
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 Text(
-                    text = "(${productData.reviews} reviews)",
+                    text = currentProduct.Description ?: "No description available.",
                     style = TextStyle(
-                        fontFamily = NunitoSansSemiBold,
+                        fontFamily = NunitoSansLight,
                         fontSize = 14.sp,
-                        color = Color(0xFF909090)
-                    )
+                        lineHeight = 22.sp,
+                        color = Color(0xFF606060)
+                    ),
+                    textAlign = TextAlign.Justify
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // Mô tả
-            Text(
-                text = productData.description,
-                style = TextStyle(
-                    fontFamily = NunitoSansLight,
-                    fontSize = 14.sp,
-                    lineHeight = 22.sp,
-                    color = Color(0xFF606060)
-                ),
-                textAlign = TextAlign.Justify
+            // Action Buttons
+            BottomActionRow(
+                isBookmarked = isBookmarked,
+                onBookmarkClick = {
+                    if (currentAccountId.isEmpty()) {
+                        Toast.makeText(context, "Please login first", Toast.LENGTH_SHORT).show()
+                        return@BottomActionRow
+                    }
+
+                    coroutineScope.launch {
+                        // Gọi chung 1 API toggleBookmark
+                        val request = BookmarkRequest(AccountID = currentAccountId, ProductID = currentProduct._id)
+                        val res = repository.toggleBookmark(request)
+
+                        if (res.isSuccess) {
+                            // Đảo ngược trạng thái hiện tại trên UI
+                            isBookmarked = !isBookmarked
+
+                            val message = if (isBookmarked) "Added to favorites" else "Removed from favorites"
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to update favorites", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                },
+                onAddToCart = {
+                    if (currentAccountId.isEmpty()) {
+                        Toast.makeText(context, "Please login first", Toast.LENGTH_SHORT).show()
+                        return@BottomActionRow
+                    }
+
+                    coroutineScope.launch {
+                        val request = AddToCartRequest(
+                            AccountID = currentAccountId,
+                            ProductID = currentProduct._id,
+                            Quantity = quantity
+                        )
+                        val res = repository.addToCart(request)
+                        if (res.isSuccess) {
+                            Toast.makeText(context, "Added $quantity items to cart!", Toast.LENGTH_SHORT).show()
+                        } else {
+                            val errorMsg = res.exceptionOrNull()?.message ?: "Failed to add"
+                            Toast.makeText(context, errorMsg, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
             )
         }
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        // Nút Add to Cart
-        BottomActionRow(
-            onAddToCart = {
-                Toast.makeText(context, "Đã thêm $quantity ${productData.name} vào giỏ!", Toast.LENGTH_SHORT).show()
-            }
-        )
     }
 }
 
@@ -210,7 +265,6 @@ fun TopImageSection(
     Box(
         modifier = modifier.fillMaxWidth()
     ) {
-        // Ảnh sản phẩm với góc bo tròn phía dưới bên trái
         Box(
             modifier = Modifier
                 .fillMaxHeight()
@@ -231,27 +285,27 @@ fun TopImageSection(
                 )
             }
 
-            // Dấu chấm (Dashes) chuyển ảnh
-            Row(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 40.dp, bottom = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                repeat(images.size) { iteration ->
-                    val isSelected = pagerState.currentPage == iteration
-                    Box(
-                        modifier = Modifier
-                            .width(if (isSelected) 30.dp else 16.dp)
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(if (isSelected) Color(0xFF303030) else Color.White)
-                    )
+            if (images.size > 1) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(end = 40.dp, bottom = 24.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(images.size) { iteration ->
+                        val isSelected = pagerState.currentPage == iteration
+                        Box(
+                            modifier = Modifier
+                                .width(if (isSelected) 30.dp else 16.dp)
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(if (isSelected) Color(0xFF303030) else Color.White)
+                        )
+                    }
                 }
             }
         }
 
-        // Nút Quay Lại
         Box(
             modifier = Modifier
                 .padding(start = 24.dp, top = 50.dp)
@@ -269,7 +323,6 @@ fun TopImageSection(
             )
         }
 
-        // Chọn màu sắc (Color Picker)
         Column(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -315,7 +368,6 @@ fun QuantitySelector(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Nút Trừ
         Box(
             modifier = Modifier
                 .size(30.dp)
@@ -341,7 +393,6 @@ fun QuantitySelector(
             )
         )
 
-        // Nút Cộng
         Box(
             modifier = Modifier
                 .size(30.dp)
@@ -361,7 +412,11 @@ fun QuantitySelector(
 }
 
 @Composable
-fun BottomActionRow(onAddToCart: () -> Unit) {
+fun BottomActionRow(
+    isBookmarked: Boolean,
+    onBookmarkClick: () -> Unit,
+    onAddToCart: () -> Unit
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -369,24 +424,23 @@ fun BottomActionRow(onAddToCart: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Nút Bookmark (Giữ để lưu)
+        // Nút Bookmark tự đổi màu dựa trên state
         Box(
             modifier = Modifier
                 .size(60.dp)
                 .clip(RoundedCornerShape(8.dp))
-                .background(Color(0xFFF0F0F0))
-                .clickable { /* Handle Bookmark */ },
+                .background(if (isBookmarked) Color(0xFF303030) else Color(0xFFF0F0F0))
+                .clickable { onBookmarkClick() },
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.ic_bookmark),
                 contentDescription = "Bookmark",
-                tint = Color(0xFF303030),
+                tint = if (isBookmarked) Color.White else Color(0xFF303030),
                 modifier = Modifier.size(24.dp)
             )
         }
 
-        // Nút Add to Cart
         Button(
             onClick = onAddToCart,
             modifier = Modifier
@@ -412,6 +466,6 @@ fun BottomActionRow(onAddToCart: () -> Unit) {
 @Composable
 fun ProductDetailPreview() {
     KOT1041_ASMTheme {
-        ProductDetail(productId = "2")
+        ProductDetail(productId = "1")
     }
 }
