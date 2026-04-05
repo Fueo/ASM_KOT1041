@@ -1,11 +1,6 @@
-package com.example.kot1041_asm
+package com.example.kot1041_asm.ui.screens
 
-import android.app.Activity
-import android.content.Intent
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,26 +24,18 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kot1041_asm.R
 import com.example.kot1041_asm.ui.theme.*
 
-class SearchScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            KOT1041_ASMTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.White
-                ) {
-                    Search()
-                }
-            }
-        }
-    }
-}
+// Import các model chuẩn từ AppModel
+import com.example.kot1041_asm.data.model.Product
+import com.example.kot1041_asm.data.model.ProductImage
 
 @Composable
-fun Search() {
+fun Search(
+    onBackClick: () -> Unit = {},
+    onProductClick: (String) -> Unit = {}
+) {
     val context = LocalContext.current
 
     var searchQuery by remember { mutableStateOf("") }
@@ -56,28 +43,30 @@ fun Search() {
 
     val filters = listOf("All", "Chair", "Table", "Lamp", "Bed")
 
+    // Cập nhật lại cách khởi tạo object Product theo đúng AppModel
     val allProducts = remember {
         listOf(
-            Product("1", "Black Simple Lamp", 12.00, "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop"),
-            Product("2", "Minimal Stand", 25.00, "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop"),
-            Product("3", "Coffee Chair", 20.00, "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=600&auto=format&fit=crop"),
-            Product("4", "Simple Desk", 50.00, "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=600&auto=format&fit=crop"),
-            Product("5", "Yellow Armchair", 45.00, "https://images.unsplash.com/photo-1519947486511-46149fa0a254?q=80&w=600&auto=format&fit=crop")
+            Product(_id = "1", ProductName = "Black Simple Lamp", Price = 12.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop"))),
+            Product(_id = "2", ProductName = "Minimal Stand", Price = 25.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop"))),
+            Product(_id = "3", ProductName = "Coffee Chair", Price = 20.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=600&auto=format&fit=crop"))),
+            Product(_id = "4", ProductName = "Simple Desk", Price = 50.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=600&auto=format&fit=crop"))),
+            Product(_id = "5", ProductName = "Yellow Armchair", Price = 45.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1519947486511-46149fa0a254?q=80&w=600&auto=format&fit=crop")))
         )
     }
 
+    // Cập nhật lại logic filter: dùng ProductName thay vì name
     val filteredProducts = allProducts.filter { product ->
-        val matchesSearch = product.name.contains(searchQuery, ignoreCase = true)
+        val matchesSearch = product.ProductName.contains(searchQuery, ignoreCase = true)
         val matchesFilter = when (selectedFilter) {
             "All" -> true
-            "Table" -> product.name.contains("Desk", true) || product.name.contains("Stand", true) || product.name.contains("Table", true)
-            "Chair" -> product.name.contains("Chair", true) || product.name.contains("Armchair", true)
-            else -> product.name.contains(selectedFilter, ignoreCase = true)
+            "Table" -> product.ProductName.contains("Desk", true) || product.ProductName.contains("Stand", true) || product.ProductName.contains("Table", true)
+            "Chair" -> product.ProductName.contains("Chair", true) || product.ProductName.contains("Armchair", true)
+            else -> product.ProductName.contains(selectedFilter, ignoreCase = true)
         }
         matchesSearch && matchesFilter
     }
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
 
         // --- HEADER TĨNH: Nút Back + Thanh Search ---
         Row(
@@ -92,7 +81,7 @@ fun Search() {
                     .size(40.dp)
                     .shadow(elevation = 2.dp, shape = RoundedCornerShape(10.dp), spotColor = Color.LightGray)
                     .background(Color.White, RoundedCornerShape(10.dp))
-                    .clickable { (context as? Activity)?.finish() },
+                    .clickable { onBackClick() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -140,7 +129,7 @@ fun Search() {
                     }
                 },
                 modifier = Modifier
-                    .weight(1f) // Chiếm toàn bộ không gian còn lại
+                    .weight(1f)
                     .height(56.dp)
                     .shadow(elevation = 2.dp, shape = RoundedCornerShape(12.dp), spotColor = Color.LightGray),
                 colors = TextFieldDefaults.colors(
@@ -223,13 +212,11 @@ fun Search() {
                     ProductCard(
                         product = product,
                         onAddToCart = {
-                            Toast.makeText(context, "Đã thêm ${product.name} vào giỏ!", Toast.LENGTH_SHORT).show()
+                            // Cập nhật lại dùng product.ProductName
+                            Toast.makeText(context, "Đã thêm ${product.ProductName} vào giỏ!", Toast.LENGTH_SHORT).show()
                         },
                         onProductClick = { productId ->
-                            val intent = Intent(context, ProductDetailScreen::class.java).apply {
-                                putExtra("PRODUCT_ID", productId)
-                            }
-                            context.startActivity(intent)
+                            onProductClick(productId)
                         }
                     )
                 }

@@ -1,7 +1,5 @@
 package com.example.kot1041_asm.ui.screens
 
-import android.app.Activity
-import android.content.Intent
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -24,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -32,7 +29,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.example.kot1041_asm.LoginScreen
 import com.example.kot1041_asm.R
 import com.example.kot1041_asm.ui.theme.BlackFont
 import com.example.kot1041_asm.ui.theme.GelasioBold
@@ -44,10 +40,9 @@ import com.example.kot1041_asm.ui.theme.Primary
 
 @Composable
 fun WelcomeScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onGetStartedClick: () -> Unit // THÊM CALLBACK Ở ĐÂY
 ) {
-    val context = LocalContext.current
-
     Box(
         modifier = modifier.fillMaxSize()
     ) {
@@ -58,11 +53,7 @@ fun WelcomeScreen(
 
         WelcomeContent(
             modifier = Modifier.fillMaxSize(),
-            onGetStartedClick = {
-                val intent = Intent(context, LoginScreen::class.java)
-                context.startActivity(intent)
-                (context as? Activity)?.finish()
-            }
+            onGetStartedClick = onGetStartedClick // GỌI CALLBACK THAY VÌ INTENT
         )
     }
 }
@@ -112,7 +103,7 @@ private fun WelcomeContent(
             text = "Get Started",
             onClick = onGetStartedClick,
             modifier = Modifier
-                .fillMaxWidth(0.62f)
+                .fillMaxWidth(0.5f)
                 .height(54.dp)
         )
 
@@ -137,6 +128,8 @@ private fun WelcomeTitle(
             ),
             color = Color(0xFF606060)
         )
+
+        Spacer(Modifier.height(6.dp))
 
         Text(
             text = "HOME BEAUTIFUL",
@@ -168,7 +161,7 @@ private fun WelcomeDescription(
             letterSpacing = 0.sp
         ),
         color = Grey,
-        textAlign = TextAlign.Start // Đổi sang căn trái (Start)
+        textAlign = TextAlign.Start
     )
 }
 
@@ -202,6 +195,7 @@ private fun PrimaryActionButton(
 @Composable
 private fun WelcomeScreenPreview() {
     KOT1041_ASMTheme {
-        WelcomeScreen()
+        // Truyền một hàm rỗng để Preview không báo lỗi
+        WelcomeScreen(onGetStartedClick = {})
     }
 }

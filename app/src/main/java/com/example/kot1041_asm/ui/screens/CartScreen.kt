@@ -1,10 +1,5 @@
-package com.example.kot1041_asm
+package com.example.kot1041_asm.ui.screens
 
-import android.app.Activity
-import android.content.Intent
-import android.os.Bundle
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -29,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.kot1041_asm.R
 import com.example.kot1041_asm.ui.theme.*
 
 // Data model cho giỏ hàng
@@ -40,24 +36,11 @@ data class CartItemModel(
     val imageUrl: String
 )
 
-class CartScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            KOT1041_ASMTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.White
-                ) {
-                    Cart()
-                }
-            }
-        }
-    }
-}
-
 @Composable
-fun Cart() {
+fun Cart(
+    onBackClick: () -> Unit = {},
+    onCheckoutClick: (Double) -> Unit = {}
+) {
     val context = LocalContext.current
 
     val cartItems = remember {
@@ -76,7 +59,7 @@ fun Cart() {
             .background(Color.White)
     ) {
         // 1. Header
-        CartHeader(onBackClick = { (context as? Activity)?.finish() })
+        CartHeader(onBackClick = onBackClick)
 
         // 2. Danh sách sản phẩm
         LazyColumn(
@@ -112,7 +95,10 @@ fun Cart() {
         }
 
         // 3. Phần thanh toán (Promo Code & Total)
-        CheckoutSection(totalPrice = totalPrice)
+        CheckoutSection(
+            totalPrice = totalPrice,
+            onCheckoutClick = { onCheckoutClick(totalPrice) }
+        )
     }
 }
 
@@ -126,7 +112,7 @@ fun CartHeader(onBackClick: () -> Unit) {
     ) {
         IconButton(onClick = onBackClick) {
             Icon(
-                painter = painterResource(id = R.drawable.ic_back), // Đã đổi sang drawable
+                painter = painterResource(id = R.drawable.ic_back),
                 contentDescription = "Back",
                 modifier = Modifier.size(20.dp),
                 tint = Color(0xFF303030)
@@ -202,9 +188,9 @@ fun CartItemRow(
                     )
                 }
 
-                // Nút Xóa (Đã đổi sang drawable)
+                // Nút Xóa
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_close), // File hình tròn có chữ X
+                    painter = painterResource(id = R.drawable.ic_close),
                     contentDescription = "Remove",
                     tint = Color(0xFF303030),
                     modifier = Modifier
@@ -269,8 +255,10 @@ fun CartItemRow(
 }
 
 @Composable
-fun CheckoutSection(totalPrice: Double) {
-    val context = LocalContext.current
+fun CheckoutSection(
+    totalPrice: Double,
+    onCheckoutClick: () -> Unit
+) {
     var promoCode by remember { mutableStateOf("") }
 
     Column(
@@ -322,7 +310,7 @@ fun CheckoutSection(totalPrice: Double) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_arrow_right_white), // Đã đổi sang drawable mũi tên
+                    painter = painterResource(id = R.drawable.ic_arrow_right_white),
                     contentDescription = "Apply",
                     tint = Color.White,
                     modifier = Modifier.size(16.dp)
@@ -363,7 +351,7 @@ fun CheckoutSection(totalPrice: Double) {
 
         // Nút Check out
         Button(
-            onClick = { context.startActivity(Intent(context, CheckoutScreen::class.java))},
+            onClick = onCheckoutClick, // Sử dụng Callback
             modifier = Modifier
                 .fillMaxWidth()
                 .height(60.dp)

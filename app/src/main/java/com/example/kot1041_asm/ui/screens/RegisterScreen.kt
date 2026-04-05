@@ -1,32 +1,11 @@
-package com.example.kot1041_asm
+package com.example.kot1041_asm.ui.screens
 
-import android.app.Activity
-import android.content.Intent
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
@@ -39,28 +18,19 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
-import com.example.kot1041_asm.ui.theme.BlackFont
-import com.example.kot1041_asm.ui.theme.Grey
-import com.example.kot1041_asm.ui.theme.Grey2
-import com.example.kot1041_asm.ui.theme.KOT1041_ASMTheme
-import com.example.kot1041_asm.ui.theme.MerriweatherBold
-import com.example.kot1041_asm.ui.theme.NunitoSansBold
-import com.example.kot1041_asm.ui.theme.NunitoSansSemiBold
-
-class RegisterScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        setContent {
-            KOT1041_ASMTheme {
-                SignUp()
-            }
-        }
-    }
-}
+import com.example.kot1041_asm.data.api.RetrofitClient
+import com.example.kot1041_asm.ui.theme.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import RegisterRequest // Đảm bảo import đúng đường dẫn chứa class RegisterRequest của bạn
 
 @Composable
-fun SignUp() {
+fun SignUp(
+    onClickLogin: () -> Unit = {}
+) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope() // Tạo scope để chạy Coroutine
 
     var name by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -71,6 +41,9 @@ fun SignUp() {
     var emailError by remember { mutableStateOf<String?>(null) }
     var passwordError by remember { mutableStateOf<String?>(null) }
     var confirmPasswordError by remember { mutableStateOf<String?>(null) }
+
+    // Thêm state loading
+    var isLoading by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -85,13 +58,13 @@ fun SignUp() {
         ) {
             Spacer(modifier = Modifier.height(10.dp))
 
-            RenderLogo()
+            RenderLogo() // Tái sử dụng hàm đã khai báo trong LoginScreen.kt
 
             Spacer(modifier = Modifier.height(36.dp))
 
             Text(
                 text = "WELCOME",
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().padding(start = 12.dp),
                 style = TextStyle(
                     fontFamily = MerriweatherBold,
                     fontSize = 24.sp,
@@ -125,10 +98,7 @@ fun SignUp() {
                 RenderTextInput(
                     label = "Name",
                     value = name,
-                    onValueChange = {
-                        name = it
-                        nameError = null
-                    },
+                    onValueChange = { name = it; nameError = null },
                     error = nameError
                 )
 
@@ -137,10 +107,7 @@ fun SignUp() {
                 RenderTextInput(
                     label = "Email",
                     value = email,
-                    onValueChange = {
-                        email = it
-                        emailError = null
-                    },
+                    onValueChange = { email = it; emailError = null },
                     error = emailError
                 )
 
@@ -149,10 +116,7 @@ fun SignUp() {
                 RenderPasswordInput(
                     label = "Password",
                     value = password,
-                    onValueChange = {
-                        password = it
-                        passwordError = null
-                    },
+                    onValueChange = { password = it; passwordError = null },
                     error = passwordError
                 )
 
@@ -161,10 +125,7 @@ fun SignUp() {
                 RenderPasswordInput(
                     label = "Confirm Password",
                     value = confirmPassword,
-                    onValueChange = {
-                        confirmPassword = it
-                        confirmPasswordError = null
-                    },
+                    onValueChange = { confirmPassword = it; confirmPasswordError = null },
                     error = confirmPasswordError
                 )
 
@@ -172,12 +133,9 @@ fun SignUp() {
 
                 Button(
                     onClick = {
-                        // Reset các lỗi trước khi check lại
-                        nameError = null
-                        emailError = null
-                        passwordError = null
-                        confirmPasswordError = null
+                        nameError = null; emailError = null; passwordError = null; confirmPasswordError = null
 
+                        // 1. Validate dữ liệu
                         if (name.isBlank()) {
                             nameError = "Name không được để trống"
                             Toast.makeText(context, nameError, Toast.LENGTH_SHORT).show()
@@ -219,9 +177,35 @@ fun SignUp() {
                             return@Button
                         }
 
-                        // Không có lỗi -> Đăng ký
-                        handleSignUp()
+                        // 2. Gọi API đăng ký
+                        coroutineScope.launch {
+                            isLoading = true
+                            try {
+                                val request = RegisterRequest(
+                                    Email = email,
+                                    Password = password,
+                                    FullName = name,
+                                )
+
+                                val response = withContext(Dispatchers.IO) {
+                                    RetrofitClient.instance.register(request)
+                                }
+
+                                if (response.isSuccessful && response.body() != null) {
+                                    Toast.makeText(context, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
+                                    // Chuyển hướng về màn hình Login
+                                    onClickLogin()
+                                } else {
+                                    Toast.makeText(context, "Đăng ký thất bại: ${response.message()}", Toast.LENGTH_SHORT).show()
+                                }
+                            } catch (e: Exception) {
+                                Toast.makeText(context, "Lỗi kết nối: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
+                            } finally {
+                                isLoading = false
+                            }
+                        }
                     },
+                    enabled = !isLoading, // Disable nút khi đang load
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp)
@@ -237,17 +221,26 @@ fun SignUp() {
                     shape = RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color(0xFF222222),
-                        contentColor = Color.White
+                        contentColor = Color.White,
+                        disabledContainerColor = Color.Gray
                     )
                 ) {
-                    Text(
-                        text = "SIGN UP",
-                        style = TextStyle(
-                            fontFamily = NunitoSansSemiBold,
-                            fontSize = 18.sp,
-                            color = Color.White
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            color = Color.White,
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
                         )
-                    )
+                    } else {
+                        Text(
+                            text = "SIGN UP",
+                            style = TextStyle(
+                                fontFamily = NunitoSansSemiBold,
+                                fontSize = 18.sp,
+                                color = Color.White
+                            )
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(14.dp))
@@ -266,11 +259,9 @@ fun SignUp() {
                     )
 
                     TextButton(
-                        onClick = {(context as? Activity)?.finish()},
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(0.dp),
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = BlackFont
-                        )
+                        onClick = { onClickLogin() },
+                        contentPadding = PaddingValues(0.dp),
+                        colors = ButtonDefaults.textButtonColors(contentColor = BlackFont)
                     ) {
                         Text(
                             text = "SIGN IN",
@@ -287,11 +278,7 @@ fun SignUp() {
     }
 }
 
-fun handleSignUp() {
-    println("Handle sign up!")
-}
-
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 fun SignUpPreview() {
     KOT1041_ASMTheme {

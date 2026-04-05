@@ -1,10 +1,6 @@
-package com.example.kot1041_asm
+package com.example.kot1041_asm.ui.screens
 
-import android.app.Activity
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,12 +20,12 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import com.example.kot1041_asm.R
 import com.example.kot1041_asm.ui.theme.*
 
 // Data class để chứa dữ liệu chi tiết sản phẩm
@@ -42,26 +38,6 @@ data class ProductDetailData(
     val description: String,
     val images: List<String>
 )
-
-class ProductDetailScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Nhận ID từ Intent được truyền qua từ HomeScreen
-        val productId = intent.getStringExtra("PRODUCT_ID") ?: "2" // Đổi default thành "2" để hiện ảnh Minimal Stand
-
-        setContent {
-            KOT1041_ASMTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.White
-                ) {
-                    ProductDetail(productId = productId)
-                }
-            }
-        }
-    }
-}
 
 // Hàm giả lập việc fetch dữ liệu từ API dựa trên ID
 fun getMockProductData(id: String): ProductDetailData {
@@ -95,7 +71,10 @@ fun getMockProductData(id: String): ProductDetailData {
 }
 
 @Composable
-fun ProductDetail(productId: String) {
+fun ProductDetail(
+    productId: String,
+    onBackClick: () -> Unit = {}
+) {
     val context = LocalContext.current
     var quantity by remember { mutableStateOf(1) }
     var selectedColorIndex by remember { mutableStateOf(0) }
@@ -120,7 +99,7 @@ fun ProductDetail(productId: String) {
             colors = colors,
             selectedColorIndex = selectedColorIndex,
             onColorSelected = { selectedColorIndex = it },
-            onBackClick = { (context as? Activity)?.finish() }
+            onBackClick = onBackClick // Dùng Callback thay vì finish()
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -164,9 +143,9 @@ fun ProductDetail(productId: String) {
             // Dòng Rating
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    painter = painterResource(id = R.drawable.ic_star), // Thay icon ngôi sao
+                    painter = painterResource(id = R.drawable.ic_star),
                     contentDescription = "Rating",
-                    tint = Color(0xFFF2C94C), // Màu vàng của ngôi sao
+                    tint = Color(0xFFF2C94C),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))

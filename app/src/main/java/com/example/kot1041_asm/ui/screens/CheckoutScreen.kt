@@ -1,10 +1,6 @@
-package com.example.kot1041_asm
+package com.example.kot1041_asm.ui.screens
 
-import android.app.Activity
-import android.os.Bundle
 import android.widget.Toast
-import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,30 +22,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.kot1041_asm.R
 import com.example.kot1041_asm.ui.theme.*
 
-class CheckoutScreen : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        // Nhận tổng tiền từ màn hình Cart truyền qua (nếu có), mặc định là 95.0
-        val orderTotal = intent.getDoubleExtra("ORDER_TOTAL", 95.00)
-
-        setContent {
-            KOT1041_ASMTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color(0xFFF5F5F5) // Nền xám nhạt để các Card màu trắng nổi bật
-                ) {
-                    Checkout(orderTotal = orderTotal)
-                }
-            }
-        }
-    }
-}
-
 @Composable
-fun Checkout(orderTotal: Double) {
+fun Checkout(
+    orderTotal: Double,
+    onBackClick: () -> Unit = {},
+    onSubmitOrder: () -> Unit = {}
+) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     val deliveryFee = 5.00
@@ -58,23 +39,23 @@ fun Checkout(orderTotal: Double) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFF5F5F5)) // Đổi nền xám nhạt
+            .background(Color(0xFFF5F5F5))
     ) {
-        // Header (Cố định ở trên)
-        CheckoutHeader(onBackClick = { (context as? Activity)?.finish() })
+        // Header
+        CheckoutHeader(onBackClick = onBackClick)
 
-        // Nội dung có thể cuộn (Sử dụng weight để đẩy nút Submit xuống đáy)
+        // Nội dung cuộn
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f) // Chiếm toàn bộ không gian còn lại
+                .weight(1f)
                 .verticalScroll(scrollState)
                 .padding(horizontal = 20.dp)
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. Shipping Address Section
-            SectionTitle(title = "Shipping Address", onEditClick = { /* Handle edit */ })
+            // 1. Shipping
+            SectionTitle(title = "Shipping Address", onEditClick = { })
             Spacer(modifier = Modifier.height(10.dp))
             ShippingAddressCard(
                 name = "Bruno Fernandes",
@@ -83,33 +64,33 @@ fun Checkout(orderTotal: Double) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 2. Payment Section
-            SectionTitle(title = "Payment", onEditClick = { /* Handle edit */ })
+            // 2. Payment
+            SectionTitle(title = "Payment", onEditClick = { })
             Spacer(modifier = Modifier.height(10.dp))
             PaymentCard(
                 cardNumber = "**** **** **** 3947",
-                logoRes = R.drawable.card // Sử dụng hình ảnh drawable tải về
+                logoRes = R.drawable.card
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // 3. Delivery Method Section
-            SectionTitle(title = "Delivery method", onEditClick = { /* Handle edit */ })
+            // 3. Delivery
+            SectionTitle(title = "Delivery method", onEditClick = { })
             Spacer(modifier = Modifier.height(10.dp))
             DeliveryMethodCard(
                 methodName = "Fast (2-3days)",
-                logoRes = R.drawable.dhl // Sử dụng hình ảnh drawable tải về
+                logoRes = R.drawable.dhl
             )
 
             Spacer(modifier = Modifier.height(30.dp))
 
-            // 4. Summary Card
+            // 4. Summary
             SummaryCard(orderPrice = orderTotal, deliveryPrice = deliveryFee, totalPrice = total)
 
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // 5. Submit Button (Luôn hiển thị ở dưới cùng màn hình)
+        // 5. Submit Button
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,7 +99,7 @@ fun Checkout(orderTotal: Double) {
             Button(
                 onClick = {
                     Toast.makeText(context, "Order Submitted Successfully!", Toast.LENGTH_SHORT).show()
-                    // Chuyển sang màn hình Success ở đây
+                    onSubmitOrder()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -242,7 +223,6 @@ fun PaymentCard(cardNumber: String, logoRes: Int) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo Thẻ - Đổ bóng trước, fill nền trắng sau để bóng không lẹm vào trong
         Box(
             modifier = Modifier
                 .size(width = 64.dp, height = 40.dp)
@@ -282,7 +262,6 @@ fun DeliveryMethodCard(methodName: String, logoRes: Int) {
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Logo Đơn vị vận chuyển
         Box(
             modifier = Modifier
                 .size(width = 80.dp, height = 40.dp)
@@ -354,7 +333,7 @@ fun SummaryRow(label: String, value: Double, isTotal: Boolean) {
     }
 }
 
-@Preview(showBackground = true, showSystemUi = true)
+@Preview(showBackground = true)
 @Composable
 fun CheckoutScreenPreview() {
     KOT1041_ASMTheme {
