@@ -1,40 +1,28 @@
 package com.example.kot1041_asm.data.api
 
-import AddToCartRequest
-import BookmarkRequest
-import LoginRequest
-import PlaceOrderRequest
-import RegisterRequest
 import com.example.kot1041_asm.data.model.*
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.*
 
-// Tạo thêm một request nhỏ cho việc update số lượng
-data class UpdateCartQtyRequest(val Quantity: Int)
-
 interface ApiService {
 
-    // 1. AUTH ROUTES (/auth)
+    // 1. AUTH ROUTES
     @POST("auth/register")
     suspend fun register(@Body request: RegisterRequest): Response<ApiResponse<Account>>
 
     @POST("auth/login")
     suspend fun login(@Body request: LoginRequest): Response<ApiResponse<Account>>
 
-    // 2. CATEGORY ROUTES (/categories)
+    // 2. CATEGORY ROUTES
     @GET("categories")
     suspend fun getAllCategories(): Response<ApiResponse<List<Category>>>
 
     @POST("categories")
     suspend fun createCategory(@Body category: Category): Response<ApiResponse<Category>>
 
-    // ==========================================
-    // 3. PRODUCT ROUTES (/products) - ĐÃ CẬP NHẬT CHUẨN BE
-    // ==========================================
-
-    // Đã gộp chung Search, Filter theo Category và Pagination thành 1 API duy nhất
+    // 3. PRODUCT ROUTES
     @GET("products")
     suspend fun getProducts(
         @Query("cateId") cateId: String? = null,
@@ -52,32 +40,27 @@ interface ApiService {
     @GET("products/popular")
     suspend fun getProductPopular(): Response<ApiResponse<List<Product>>>
 
-    // ==========================================
-    // 4. BOOKMARK ROUTES (/bookmarks)
-    // ==========================================
+    // 4. BOOKMARK ROUTES
     @GET("bookmarks/account/{accountId}")
     suspend fun getBookmarksByAccount(@Path("accountId") accountId: String): Response<ApiResponse<List<Bookmark>>>
 
-    // Thay thế POST (create) và DELETE (delete) thành 1 hàm Toggle duy nhất
     @POST("bookmarks/toggle")
     suspend fun toggleBookmark(@Body request: BookmarkRequest): Response<ApiResponse<Bookmark>>
+
     // ==========================================
-    // 5. BILL / ORDER ROUTES (/bills) - ĐÃ CẬP NHẬT CHUẨN BE
+    // 5. BILL / ORDER ROUTES
     // ==========================================
     @POST("bills")
     suspend fun placeOrder(@Body request: PlaceOrderRequest): Response<ApiResponse<Bill>>
 
-    // Lấy lịch sử đặt hàng theo email (Trả về 1 MẢNG các OrderResponse)
-    @GET("bills/history/{email}")
-    suspend fun getOrderHistoryByEmail(@Path("email") email: String): Response<ApiResponse<List<OrderResponse>>>
+    // Đã thay đổi email thành accountId
+    @GET("bills/history/{accountId}")
+    suspend fun getOrderHistoryByAccount(@Path("accountId") accountId: String): Response<ApiResponse<List<OrderResponse>>>
 
-    // Lấy chi tiết 1 đơn hàng theo billId (Trả về 1 OBJECT OrderResponse duy nhất)
     @GET("bills/{billId}")
     suspend fun getBillDetail(@Path("billId") billId: String): Response<ApiResponse<OrderResponse>>
 
-    // ==========================================
-    // 6. CART ROUTES (/cart)
-    // ==========================================
+    // 6. CART ROUTES
     @GET("cart/account/{accountId}")
     suspend fun getCartByAccount(@Path("accountId") accountId: String): Response<ApiResponse<List<CartItem>>>
 
@@ -89,13 +72,22 @@ interface ApiService {
 
     @DELETE("cart/{id}")
     suspend fun removeFromCart(@Path("id") cartItemId: String): Response<ApiResponse<CartItem>>
+
+    // 7. ADDRESS ROUTES
+    @GET("addresses/account/{accountId}")
+    suspend fun getAddressesByAccount(@Path("accountId") accountId: String): Response<ApiResponse<List<Address>>>
+
+    @POST("addresses")
+    suspend fun createAddress(@Body request: AddressRequest): Response<ApiResponse<Address>>
+
+    @PUT("addresses/{id}")
+    suspend fun updateAddress(@Path("id") addressId: String, @Body request: AddressRequest): Response<ApiResponse<Address>>
+
+    @DELETE("addresses/{id}")
+    suspend fun deleteAddress(@Path("id") addressId: String): Response<ApiResponse<Any>>
 }
 
-// ==========================================
-// RETROFIT CLIENT (SINGLETON)
-// ==========================================
 object RetrofitClient {
-    // Nhớ update link ngrok mới mỗi khi chạy lại ngrok nhé
     private const val BASE_URL = "https://unfitting-cyclicly-dell.ngrok-free.dev/"
 
     val instance: ApiService by lazy {

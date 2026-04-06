@@ -1,7 +1,6 @@
 package com.example.kot1041_asm.ui.screens
 
-import AddToCartRequest
-import BookmarkRequest
+
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -29,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kot1041_asm.R
+import com.example.kot1041_asm.data.model.AddToCartRequest
+import com.example.kot1041_asm.data.model.BookmarkRequest
 import com.example.kot1041_asm.data.model.Product
 import com.example.kot1041_asm.data.repository.AppRepository
 import com.example.kot1041_asm.ui.theme.*
@@ -209,7 +210,10 @@ fun ProductDetail(
 
                     coroutineScope.launch {
                         // Gọi chung 1 API toggleBookmark
-                        val request = BookmarkRequest(AccountID = currentAccountId, ProductID = currentProduct._id)
+                        val request = BookmarkRequest(
+                            AccountID = currentAccountId,
+                            ProductID = currentProduct._id
+                        )
                         val res = repository.toggleBookmark(request)
 
                         if (res.isSuccess) {

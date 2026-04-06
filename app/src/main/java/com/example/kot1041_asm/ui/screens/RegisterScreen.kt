@@ -19,11 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
 import androidx.compose.ui.unit.sp
 import com.example.kot1041_asm.data.api.RetrofitClient
+import com.example.kot1041_asm.data.model.RegisterRequest
 import com.example.kot1041_asm.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import RegisterRequest // Đảm bảo import đúng đường dẫn chứa class RegisterRequest của bạn
 
 @Composable
 fun SignUp(

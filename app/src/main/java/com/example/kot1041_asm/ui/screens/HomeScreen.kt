@@ -1,6 +1,5 @@
 package com.example.kot1041_asm.ui.screens
 
-import AddToCartRequest
 import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -36,6 +35,7 @@ import coil.decode.SvgDecoder
 import coil.request.ImageRequest
 import com.example.kot1041_asm.R
 import com.example.kot1041_asm.data.api.RetrofitClient
+import com.example.kot1041_asm.data.model.AddToCartRequest
 import com.example.kot1041_asm.data.model.Category
 import com.example.kot1041_asm.data.model.Product
 import com.example.kot1041_asm.data.repository.AppRepository

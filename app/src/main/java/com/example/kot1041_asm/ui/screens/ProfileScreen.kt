@@ -32,7 +32,9 @@ import com.example.kot1041_asm.ui.theme.*
 @Composable
 fun ProfileScreen(
     onLogoutClick: () -> Unit = {},
-    onSearchClick: () -> Unit = {}
+    onSearchClick: () -> Unit = {},
+    onAddressClick: () -> Unit = {},
+    onOrderHistoryClick: () -> Unit = {},
 ) {
     val context = LocalContext.current
 
@@ -168,8 +170,15 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(30.dp))
 
             // 3. Danh sách Menu
-            ProfileMenuItem(title = "My orders", subtitle = "Already have 10 orders")
-            ProfileMenuItem(title = "Shipping Addresses", subtitle = "03 Addresses")
+            ProfileMenuItem(title = "My orders", subtitle = "Already have 10 orders", onClick = onOrderHistoryClick)
+
+            // --- GẮN SỰ KIỆN CLICK VÀO ĐÂY ---
+            ProfileMenuItem(
+                title = "Shipping Addresses",
+                subtitle = "Manage your addresses",
+                onClick = onAddressClick
+            )
+
             ProfileMenuItem(title = "Payment Method", subtitle = "You have 2 cards")
             ProfileMenuItem(title = "My reviews", subtitle = "Reviews for 5 items")
             ProfileMenuItem(title = "Setting", subtitle = "Notification, Password, FAQ, Contact")
@@ -178,8 +187,6 @@ fun ProfileScreen(
         }
     }
 }
-
-// ... ProfileMenuItem giữ nguyên như cũ ...
 
 @Composable
 fun ProfileMenuItem(

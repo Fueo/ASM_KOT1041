@@ -1,4 +1,4 @@
-package com.example.kot1041_asm.ui.screens
+package com.example.kot1041_asm
 
 import android.content.Context
 import android.content.SharedPreferences
@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.kot1041_asm.ui.screens.*
 import com.example.kot1041_asm.ui.theme.KOT1041_ASMTheme
 
 class MainActivity : ComponentActivity() {
@@ -43,8 +44,7 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
         sharedPreferences.edit().putBoolean("is_logged_in", status).apply()
     }
 
-    // 1. CHUẨN HOÁ LUỒNG KHỞI ĐỘNG:
-    // Nếu đã đăng nhập thì vào thẳng home, chưa thì vào welcome/login
+    // Luồng khởi động: Nếu đã login thì vào home, ngược lại vào welcome
     val startDestination = if (isLoggedIn) "home" else "welcome"
 
     NavHost(navController = navController, startDestination = startDestination) {
@@ -52,11 +52,17 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
         composable("login") { LoginRoute(navController, isLoggedIn, updateLoginState) }
         composable("register") { RegisterRoute(navController) }
 
-        // Không cần truyền isLoggedIn vào HomeRoute nữa vì nếu vào được đây là đã log in
         composable("home") { HomeRoute(navController, updateLoginState) }
 
         composable("search") { SearchRoute(navController) }
         composable("cart") { CartRoute(navController) }
+        composable("address") { AddressRoute(navController) }
+
+        // --- 1. THÊM ROUTE LỊCH SỬ ĐƠN HÀNG ---
+        composable("order_history") { OrderHistoryRoute(navController) }
+
+        // --- 2. THÊM ROUTE THÀNH CÔNG ---
+        composable("success") { SuccessRoute(navController) }
 
         composable(
             route = "product_detail/{productId}",
@@ -77,7 +83,7 @@ fun AppNavigation(sharedPreferences: SharedPreferences) {
 }
 
 // =====================================================================
-// KHAI BÁO CÁC ROUTE
+// KHAI BÁO CÁC ROUTE WRAPPERS
 // =====================================================================
 
 @Composable
@@ -85,7 +91,7 @@ fun WelcomeRoute(navController: NavController) {
     WelcomeScreen(
         onGetStartedClick = {
             navController.navigate("login") {
-                popUpTo("welcome") { inclusive = true } // Xoá welcome khỏi backstack
+                popUpTo("welcome") { inclusive = true }
             }
         }
     )
@@ -101,9 +107,8 @@ fun LoginRoute(
         isLoggedIn = isLoggedIn,
         onSetLoggedIn = updateLoginState,
         onNavigateHome = {
-            // 2. CHUẨN HOÁ BACKSTACK ĐĂNG NHẬP
             navController.navigate("home") {
-                popUpTo(0) { inclusive = true } // Xoá toàn bộ backstack. Ở Home ấn back sẽ thoát app
+                popUpTo(0) { inclusive = true }
             }
         },
         onClickRegister = {
@@ -144,16 +149,14 @@ fun HomeRoute(
                             navController.navigate("product_detail/$productId")
                         },
                         onLogoutClick = {
-                            // 3. CHUẨN HOÁ BACKSTACK ĐĂNG XUẤT
                             updateLoginState(false)
                             navController.navigate("welcome") {
-                                popUpTo(0) { inclusive = true } // Clear toàn bộ để không back lại được Home
+                                popUpTo(0) { inclusive = true }
                             }
                         }
                     )
                 }
 
-                // --- ĐÃ CẬP NHẬT CÁC HÀM CHUYỂN TRANG CHO BOOKMARK ---
                 composable("tab_bookmark") {
                     BookmarkScreen(
                         onSearchClick = { navController.navigate("search") },
@@ -171,10 +174,13 @@ fun HomeRoute(
                 composable("tab_profile") {
                     ProfileScreen(
                         onSearchClick = { navController.navigate("search") },
+                        onAddressClick = { navController.navigate("address") },
+                        // --- ĐÃ KẾT NỐI VỚI ROUTE ORDER_HISTORY ---
+                        onOrderHistoryClick = { navController.navigate("order_history") },
                         onLogoutClick = {
                             updateLoginState(false)
                             navController.navigate("welcome") {
-                                popUpTo(0) { inclusive = true } // Clear toàn bộ backstack
+                                popUpTo(0) { inclusive = true }
                             }
                         }
                     )
@@ -218,6 +224,41 @@ fun CheckoutRoute(navController: NavController, orderTotal: Double) {
         orderTotal = orderTotal,
         onBackClick = { navController.popBackStack() },
         onSubmitOrder = {
+            navController.navigate("success") {
+                // Xoá màn hình cart/checkout khỏi ngăn xếp để ko back lại được
+                popUpTo("home") { inclusive = false }
+            }
+        }
+    )
+}
+
+@Composable
+fun AddressRoute(navController: NavController) {
+    AddressScreen(
+        onBackClick = { navController.popBackStack() }
+    )
+}
+
+@Composable
+fun OrderHistoryRoute(navController: NavController) {
+    OrderHistoryScreen(
+        onBackClick = { navController.popBackStack() },
+        onDetailClick = { orderId ->
+            // TODO: Điều hướng sang màn hình chi tiết đơn hàng nếu cần
+        }
+    )
+}
+
+@Composable
+fun SuccessRoute(navController: NavController) {
+    SuccessScreen(
+        onTrackOrderClick = {
+            // --- KHI ĐẶT HÀNG XONG, BẤM TRACK THÌ SANG LỊCH SỬ ---
+            navController.navigate("order_history") {
+                popUpTo("home") { inclusive = false }
+            }
+        },
+        onBackHomeClick = {
             navController.navigate("home") {
                 popUpTo("home") { inclusive = false }
             }

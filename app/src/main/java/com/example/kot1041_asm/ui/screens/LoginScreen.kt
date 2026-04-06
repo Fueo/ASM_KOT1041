@@ -30,8 +30,8 @@ import com.example.kot1041_asm.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import LoginRequest // Đảm bảo bạn đã import đúng đường dẫn chứa class LoginRequest
 import android.content.Context
+import com.example.kot1041_asm.data.model.LoginRequest
 
 @Composable
 fun Login(
@@ -282,6 +282,11 @@ fun Login(
             }
         }
     }
+}
+
+@Composable
+fun LoginRequest(Email: String, Password: String) {
+    TODO("Not yet implemented")
 }
 
 // =================== CÁC COMPONENT DÙNG CHUNG ===================
