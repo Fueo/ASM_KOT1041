@@ -1,5 +1,8 @@
 package com.example.kot1041_asm.ui.screens
 
+import AddToCartRequest
+import BookmarkRequest
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,9 +30,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.kot1041_asm.R
-import com.example.kot1041_asm.data.model.Product
-import com.example.kot1041_asm.data.model.ProductImage
+import com.example.kot1041_asm.data.model.Bookmark
+import com.example.kot1041_asm.data.repository.AppRepository
 import com.example.kot1041_asm.ui.theme.*
+import kotlinx.coroutines.launch
 
 @Composable
 fun BookmarkScreen(
@@ -38,22 +42,48 @@ fun BookmarkScreen(
     onProductClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val repository = remember { AppRepository() }
+
+    // Lấy AccountID từ SharedPreferences
+    val sharedPref = remember { context.getSharedPreferences("MyAppPrefs", Context.MODE_PRIVATE) }
+    val currentAccountId = sharedPref.getString("user_id", "") ?: ""
+
+    // States
+    var bookmarks by remember { mutableStateOf<List<Bookmark>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(false) }
     var cartCount by remember { mutableStateOf(0) }
 
-    // Mock Data tĩnh (Sau này bạn có thể thay bằng API repository.getBookmarks)
-    val bookmarks = remember {
-        mutableStateListOf(
-            Product(_id = "1", ProductName = "Coffee Table", Price = 50.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=600&auto=format&fit=crop"))),
-            Product(_id = "2", ProductName = "Coffee Chair", Price = 20.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=600&auto=format&fit=crop"))),
-            Product(_id = "3", ProductName = "Minimal Stand", Price = 25.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1532372320572-cda25653a26d?q=80&w=600&auto=format&fit=crop"))),
-            Product(_id = "4", ProductName = "Minimal Desk", Price = 50.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?q=80&w=600&auto=format&fit=crop"))),
-            Product(_id = "5", ProductName = "Minimal Lamp", Price = 12.00, CateID = null, productImage = listOf(ProductImage(url = "https://images.unsplash.com/photo-1519947486511-46149fa0a254?q=80&w=600&auto=format&fit=crop")))
-        )
+    // Hàm load dữ liệu ban đầu
+    fun loadInitialData() {
+        if (currentAccountId.isEmpty()) return
+        coroutineScope.launch {
+            isLoading = true
+
+            // Lấy số lượng giỏ hàng để hiển thị Badge
+            val cartRes = repository.getCart(currentAccountId)
+            if (cartRes.isSuccess) {
+                cartCount = cartRes.getOrNull()?.sumOf { it.Quantity } ?: 0
+            }
+
+            // Lấy danh sách Bookmark
+            val bmRes = repository.getBookmarks(currentAccountId)
+            if (bmRes.isSuccess) {
+                bookmarks = bmRes.getOrNull() ?: emptyList()
+            } else {
+                Toast.makeText(context, "Failed to load favorites", Toast.LENGTH_SHORT).show()
+            }
+
+            isLoading = false
+        }
     }
 
-    // Box ngoài cùng để chứa nội dung danh sách và Nút Add To Cart ghim ở đáy
-    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
+    // Fetch dữ liệu khi vừa vào màn hình
+    LaunchedEffect(Unit) {
+        loadInitialData()
+    }
 
+    Box(modifier = Modifier.fillMaxSize().background(Color.White)) {
         Column(modifier = Modifier.fillMaxSize()) {
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -67,7 +97,11 @@ fun BookmarkScreen(
             Spacer(modifier = Modifier.height(10.dp))
 
             // 2. Danh sách sản phẩm Bookmark
-            if (bookmarks.isEmpty()) {
+            if (isLoading && bookmarks.isEmpty()) {
+                Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF303030))
+                }
+            } else if (bookmarks.isEmpty()) {
                 Box(modifier = Modifier.weight(1f).fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(
                         text = "No favorites yet",
@@ -79,20 +113,46 @@ fun BookmarkScreen(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(bottom = 100.dp) // Chừa khoảng trống cho nút bottom
                 ) {
-                    items(bookmarks) { product ->
+                    items(bookmarks, key = { it._id }) { bookmark ->
                         BookmarkItem(
-                            product = product,
+                            bookmark = bookmark,
                             onRemoveClick = {
-                                bookmarks.remove(product) // Xóa khỏi danh sách tạm thời
-                                Toast.makeText(context, "Removed from favorites", Toast.LENGTH_SHORT).show()
+                                val productId = bookmark.ProductID?._id ?: return@BookmarkItem
+                                coroutineScope.launch {
+                                    // Xóa khỏi UI ngay lập tức cho mượt
+                                    bookmarks = bookmarks.filter { it._id != bookmark._id }
+
+                                    // Gọi API xóa (dùng toggle)
+                                    val req = BookmarkRequest(currentAccountId, productId)
+                                    val res = repository.toggleBookmark(req)
+
+                                    if (res.isSuccess) {
+                                        Toast.makeText(context, "Removed from favorites", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        // Nếu lỗi, load lại dữ liệu cũ
+                                        loadInitialData()
+                                        Toast.makeText(context, "Failed to remove", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             },
                             onAddToCartClick = {
-                                cartCount++
-                                Toast.makeText(context, "Added to cart!", Toast.LENGTH_SHORT).show()
+                                val productId = bookmark.ProductID?._id ?: return@BookmarkItem
+                                coroutineScope.launch {
+                                    val req = AddToCartRequest(currentAccountId, productId, 1)
+                                    val res = repository.addToCart(req)
+                                    if (res.isSuccess) {
+                                        cartCount++
+                                        Toast.makeText(context, "Added to cart!", Toast.LENGTH_SHORT).show()
+                                    } else {
+                                        Toast.makeText(context, "Failed to add to cart", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
                             },
-                            onItemClick = { onProductClick(product._id) }
+                            onItemClick = {
+                                val productId = bookmark.ProductID?._id ?: return@BookmarkItem
+                                onProductClick(productId)
+                            }
                         )
-                        // Đường viền ngăn cách giữa các item
                         HorizontalDivider(color = Color(0xFFF0F0F0), thickness = 1.dp, modifier = Modifier.padding(horizontal = 20.dp))
                     }
                 }
@@ -110,8 +170,23 @@ fun BookmarkScreen(
             ) {
                 Button(
                     onClick = {
-                        cartCount += bookmarks.size
-                        Toast.makeText(context, "All items added to cart!", Toast.LENGTH_SHORT).show()
+                        if (currentAccountId.isEmpty()) return@Button
+                        coroutineScope.launch {
+                            var addedCount = 0
+                            // Chạy vòng lặp gọi API add to cart cho từng sản phẩm
+                            bookmarks.forEach { bm ->
+                                bm.ProductID?._id?.let { prodId ->
+                                    val req = AddToCartRequest(currentAccountId, prodId, 1)
+                                    val res = repository.addToCart(req)
+                                    if (res.isSuccess) addedCount++
+                                }
+                            }
+
+                            if (addedCount > 0) {
+                                cartCount += addedCount
+                                Toast.makeText(context, "Added $addedCount items to cart!", Toast.LENGTH_SHORT).show()
+                            }
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -161,11 +236,15 @@ fun BookmarkHeader(cartCount: Int, onSearchClick: () -> Unit, onCartClick: () ->
 
 @Composable
 fun BookmarkItem(
-    product: Product,
+    bookmark: Bookmark,
     onRemoveClick: () -> Unit,
     onAddToCartClick: () -> Unit,
     onItemClick: () -> Unit
 ) {
+    // Rút trích dữ liệu Product từ Bookmark
+    val product = bookmark.ProductID
+    if (product == null) return // Tránh lỗi nếu Backend trả về Product null (sp đã bị xoá khỏi DB)
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -210,13 +289,13 @@ fun BookmarkItem(
                     )
                 }
 
-                // Nút X (Dùng chung ic_close hoặc ic_close_circle nếu bạn có)
+                // Nút X
                 IconButton(
                     onClick = onRemoveClick,
                     modifier = Modifier.size(24.dp)
                 ) {
                     Icon(
-                        painter = painterResource(id = R.drawable.ic_close), // Thay bằng icon tròn x nếu bạn có
+                        painter = painterResource(id = R.drawable.ic_close),
                         contentDescription = "Remove",
                         tint = Color(0xFF303030),
                         modifier = Modifier.size(20.dp)
